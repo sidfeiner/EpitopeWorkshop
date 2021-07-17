@@ -33,7 +33,6 @@ dependencies:
   - scipy
   - spacy-model-en_core_web_sm=2.3
   - spacy=2.3
-  - swig # for box2d on Windows
   - torchtext
   - torchvision
   - tqdm
@@ -45,6 +44,7 @@ dependencies:
     - gym
     - atari-py
     - box2d-py
+    - biopython
     # There's no conda package for this version yet.
     - https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-2.3.0/de_core_news_sm-2.3.0.tar.gz
 
