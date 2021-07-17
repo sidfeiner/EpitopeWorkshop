@@ -1,8 +1,6 @@
 from Bio import SeqIO
 from pandas import DataFrame
-
-IDS_COL_NAME = 'id'
-SEQ_COL_NAME = 'sequence'
+from EpitopeWorkshop.common.contract import *
 
 
 def read_fasta_file(path: str) -> DataFrame:

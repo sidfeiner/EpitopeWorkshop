@@ -1,13 +1,5 @@
 import pandas as pd
-from EpitopeWorkshop.process import read
-
-COMPUTED_VOLUME_COL_NAME = 'computed_volume'
-HYDROPHOBICITY_COL_NAME = 'hydrophobicity'
-POLARITY_COL_NAME = 'polarity'
-RSA_COL_NAME = 'rsa'
-SS_COL_NAME = 'ss'
-TYPE_COL_NAME = 'type'
-
+from EpitopeWorkshop.common.contract import *
 
 def _calculate_computed_volume(row: pd.Series):
     return None
