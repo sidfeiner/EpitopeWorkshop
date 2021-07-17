@@ -16,3 +16,5 @@ with all the arguments that the `main` function expects:
 * `sequences_file_path` - Path to input file with amino acid sequences. File must be in FASTA format.
 
 # Maintain
+To facilitate working with the DF's fields, manage all field names in the `common.contract` file
+and use those variables in the code anywhere you interact with the DF. 

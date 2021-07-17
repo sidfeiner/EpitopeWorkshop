@@ -1,6 +1,8 @@
 # Base fields
-IDS_COL_NAME = 'id'
+ID_COL_NAME = 'sequence_id'
 SEQ_COL_NAME = 'sequence'
+SUB_SEQ_COL_NAME = 'sub_sequence'
+AMINO_ACID_INDEX_COL_NAME = 'amino_acid_index'
 
 # Feature fields
 COMPUTED_VOLUME_COL_NAME = 'computed_volume'

@@ -1,16 +1,37 @@
-from Bio import SeqIO
-from pandas import DataFrame
+from typing import List
+
+from Bio import SeqIO, Seq
+import pandas as pd
 from EpitopeWorkshop.common.contract import *
+from EpitopeWorkshop.common.conf import DEFAULT_WINDOW_SIZE
 
 
-def read_fasta_file(path: str) -> DataFrame:
+def split_to_subsequences(sequence: Seq, size: int) -> List[str]:
+    sub_seqs = []
+    for start_index in range(len(sequence) - size + 1):
+        sub_seqs.append(sequence[start_index:start_index + size])
+    return sub_seqs
+
+
+def read_fasta(path: str, with_sliding_window: bool = True,
+               sliding_window_size: int = DEFAULT_WINDOW_SIZE) -> pd.DataFrame:
     ids = []
     seqs = []
+    sub_seqs = []
+    amino_acid_index_per_subseq = []
     with open(path) as handle:
         for record in SeqIO.parse(handle, "fasta"):
-            ids.append(record.id)
-            seqs.append(record.seq)
+            current_sub_seqs = split_to_subsequences(record.seq, sliding_window_size) if with_sliding_window else [
+                record.seq]
+            mult_values = len(current_sub_seqs) * sliding_window_size if with_sliding_window else 1
+            ids.extend(mult_values * [record.id])
+            seqs.extend(mult_values * [record.seq])
+            sub_seqs.extend([sub_seq for current_sub_seq in current_sub_seqs for sub_seq in
+                             [current_sub_seq] * sliding_window_size])
+            amino_acid_index_per_subseq.extend([index for sub_seq in current_sub_seqs for index in range(len(sub_seq))])
             if len(record.features):
                 print(f"found features: {record.features}")
 
-    return DataFrame(data={IDS_COL_NAME: ids, SEQ_COL_NAME: seqs}).set_index([IDS_COL_NAME])
+    data = {ID_COL_NAME: ids, SEQ_COL_NAME: seqs, SUB_SEQ_COL_NAME: sub_seqs,
+            AMINO_ACID_INDEX_COL_NAME: amino_acid_index_per_subseq}
+    return pd.DataFrame(data)
