@@ -1,0 +1,43 @@
+import pandas as pd
+from EpitopeWorkshop.process import read
+
+COMPUTED_VOLUME_COL_NAME = 'computed_volume'
+HYDROPHOBICITY_COL_NAME = 'hydrophobicity'
+POLARITY_COL_NAME = 'polarity'
+RSA_COL_NAME = 'rsa'
+SS_COL_NAME = 'ss'
+TYPE_COL_NAME = 'type'
+
+
+def _calculate_computed_volume(row: pd.Series):
+    return None
+
+
+def _calculate_hydrophobicity(row: pd.Series):
+    return None
+
+
+def _calculate_polarity(row: pd.Series):
+    return None
+
+
+def _calculate_relative_surface_accessibility(row: pd.Series):
+    return None
+
+
+def _calculate_secondary_surface(row: pd.Series):
+    return None
+
+
+def _calculate_type(row: pd.Series):
+    return None
+
+
+def calculate_features(df: pd.DataFrame) -> pd.DataFrame:
+    df[COMPUTED_VOLUME_COL_NAME] = df.apply(_calculate_computed_volume, axis=1)
+    df[HYDROPHOBICITY_COL_NAME] = df.apply(_calculate_hydrophobicity, axis=1)
+    df[POLARITY_COL_NAME] = df.apply(_calculate_polarity, axis=1)
+    df[RSA_COL_NAME] = df.apply(_calculate_relative_surface_accessibility, axis=1)
+    df[SS_COL_NAME] = df.apply(_calculate_secondary_surface, axis=1)
+    df[TYPE_COL_NAME] = df.apply(_calculate_type, axis=1)
+    return df
