@@ -45,6 +45,7 @@ dependencies:
     - atari-py
     - box2d-py
     - biopython
+    - quantiprot
     - fire
     - memoization
     # There's no conda package for this version yet.

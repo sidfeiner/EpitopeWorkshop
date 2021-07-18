@@ -23,11 +23,12 @@ def read_fasta(path: str, with_sliding_window: bool = True,
         for record in SeqIO.parse(handle, "fasta"):
             current_sub_seqs = split_to_subsequences(record.seq, sliding_window_size) if with_sliding_window else [
                 record.seq]
-            mult_values = len(current_sub_seqs) * sliding_window_size if with_sliding_window else 1
-            ids.extend(mult_values * [record.id])
-            seqs.extend(mult_values * [record.seq])
+            mult_basic_values = len(current_sub_seqs) * sliding_window_size * len(record.seq) if with_sliding_window else len(record.seq)
+            mult_subseq_values = sliding_window_size * len(record.seq) if with_sliding_window else len(record.seq)
+            ids.extend(mult_basic_values * [record.id])
+            seqs.extend(mult_basic_values * [record.seq])
             sub_seqs.extend([sub_seq for current_sub_seq in current_sub_seqs for sub_seq in
-                             [current_sub_seq] * sliding_window_size])
+                             [current_sub_seq] * mult_subseq_values])
             amino_acid_index_per_subseq.extend([index for sub_seq in current_sub_seqs for index in range(len(sub_seq))])
             if len(record.features):
                 print(f"found features: {record.features}")
