@@ -7,7 +7,7 @@ from EpitopeWorkshop.process.features import FeatureCalculator
 def main(sequences_file_path: str, with_sliding_window: bool = DEFAULT_WITH_SLIDING_WINDOW,
          window_size: int = DEFAULT_WINDOW_SIZE):
     df = read.read_fasta(sequences_file_path, with_sliding_window, window_size)
-    calculator = FeatureCalculator(window_size)
+    calculator = FeatureCalculator()
     df = calculator.calculate_features(df)
 
 
