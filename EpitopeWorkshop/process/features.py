@@ -7,6 +7,8 @@ from EpitopeWorkshop.common.contract import *
 
 
 class FeatureCalculator:
+    # Polarity based on: https://teaching.ncl.ac.uk/bms/wiki/index.php/Amino_acids
+    POLAR_AAS = ['R', 'N', 'D', 'C', 'Q', 'E', 'H', 'K', 'S', 'T', 'Y']
     AA_TO_VOLUME_MAPPING = get_aa2volume()
 
     def _key_amino_acid(self, row):
@@ -30,9 +32,9 @@ class FeatureCalculator:
     def _calculate_hydrophobicity(self, row: pd.Series):
         return ProtParamData.kd[row[TYPE_COL_NAME]]
 
-    @cached(custom_key_maker=_key_seq_id_amino)
+    @cached(custom_key_maker=_key_amino_acid)
     def _calculate_polarity(self, row: pd.Series):
-        return None
+        return row[TYPE_COL_NAME] in self.POLAR_AAS
 
     @cached(custom_key_maker=_key_seq_id_amino)
     def _calculate_relative_surface_accessibility(self, row: pd.Series):
