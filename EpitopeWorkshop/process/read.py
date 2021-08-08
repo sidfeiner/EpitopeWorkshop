@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from Bio import SeqIO, Seq
 import pandas as pd
@@ -14,16 +14,19 @@ def split_to_subsequences(sequence: Seq, size: int) -> List[str]:
 
 
 def read_fasta(path: str, with_sliding_window: bool = True,
-               sliding_window_size: int = DEFAULT_WINDOW_SIZE) -> pd.DataFrame:
+               sliding_window_size: int = DEFAULT_WINDOW_SIZE,
+               limit_sequences_amt: Optional[int] = None
+               ) -> pd.DataFrame:
     ids = []
     seqs = []
     sub_seqs = []
     amino_acid_index_per_subseq = []
     with open(path) as handle:
-        for record in SeqIO.parse(handle, "fasta"):
+        for idx, record in enumerate(SeqIO.parse(handle, "fasta")):
             current_sub_seqs = split_to_subsequences(record.seq, sliding_window_size) if with_sliding_window else [
                 record.seq]
-            mult_basic_values = len(current_sub_seqs) * sliding_window_size * len(record.seq) if with_sliding_window else len(record.seq)
+            mult_basic_values = len(current_sub_seqs) * sliding_window_size * len(
+                record.seq) if with_sliding_window else len(record.seq)
             mult_subseq_values = sliding_window_size * len(record.seq) if with_sliding_window else len(record.seq)
             ids.extend(mult_basic_values * [record.id])
             seqs.extend(mult_basic_values * [record.seq])
@@ -32,6 +35,8 @@ def read_fasta(path: str, with_sliding_window: bool = True,
             amino_acid_index_per_subseq.extend([index for sub_seq in current_sub_seqs for index in range(len(sub_seq))])
             if len(record.features):
                 print(f"found features: {record.features}")
+            if limit_sequences_amt is not None and limit_sequences_amt == idx:
+                break
 
     data = {ID_COL_NAME: ids, SEQ_COL_NAME: seqs, SUB_SEQ_COL_NAME: sub_seqs,
             AMINO_ACID_INDEX_COL_NAME: amino_acid_index_per_subseq}
