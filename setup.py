@@ -10,4 +10,10 @@ setup(
     license='For internal usage only',
     description='Epitope Workshop codebase',
     packages=find_packages(include='EpitopeWorkshop'),
+    install_requires=[
+        'biopython',
+        'quantiprot',
+        'fire',
+        'memoization',
+    ]
 )

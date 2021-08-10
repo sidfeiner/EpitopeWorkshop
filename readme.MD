@@ -10,7 +10,7 @@ If you need to browse to the env interpreter, go to  `${CONDA_PREFIX}/envs/epito
 ### CLI / Jupyter
 Run `conda activate epitope-workshop` and then `jupyter lab`
 
-# Run
+# Run   
 We use Google's `fire` module to turn our code into a CLI. So you must run `main.py`
 with all the arguments that the `main` function expects:
 * `sequences-file-path` - Path to input file with amino acid sequences. File must be in FASTA format.
