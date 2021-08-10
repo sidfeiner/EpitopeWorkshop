@@ -2,7 +2,8 @@
 ID_COL_NAME = 'sequence_id'
 SEQ_COL_NAME = 'sequence'
 SUB_SEQ_COL_NAME = 'sub_sequence'
-AMINO_ACID_INDEX_COL_NAME = 'amino_acid_index'
+AMINO_ACID_SEQ_INDEX_COL_NAME = 'amino_acid_seq_index'
+AMINO_ACID_SUBSEQ_INDEX_COL_NAME = 'amino_acid_subseq_index'
 
 # Feature fields
 ANALYZED_SEQ_COL_NAME = 'analyzed_sequence'

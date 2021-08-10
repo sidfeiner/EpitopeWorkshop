@@ -29,7 +29,7 @@ class FeatureCalculator:
     AA_TO_SURFACE_ACCESSIBILITY = add_group_type_values(ProtParamData.em)
 
     def _key_seq_id_amino(self, row: pd.Series):
-        return row[ID_COL_NAME], row[AMINO_ACID_INDEX_COL_NAME]
+        return row[ID_COL_NAME], row[AMINO_ACID_SUBSEQ_INDEX_COL_NAME]
 
     def _key_seq_id(self, row: pd.Series):
         return row[ID_COL_NAME]
@@ -62,7 +62,7 @@ class FeatureCalculator:
         return analyzed_seq.secondary_structure_fraction()
 
     def _calculate_type(self, row: pd.Series):
-        return row[SEQ_COL_NAME][row[AMINO_ACID_INDEX_COL_NAME]].upper()
+        return row[SEQ_COL_NAME][row[AMINO_ACID_SEQ_INDEX_COL_NAME]].upper()
 
     @cached
     def _calculate_all_types(self, aa_type: str):

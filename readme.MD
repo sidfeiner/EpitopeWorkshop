@@ -16,6 +16,8 @@ with all the arguments that the `main` function expects:
 * `sequences-file-path` - Path to input file with amino acid sequences. File must be in FASTA format.
 * `limit-sequences-amt` - Optional argument to limit amount of records from FASTA file
 in case you want a quicker setup during dev.
+  
+For example: `main.py --sequences_file_path /Users/sfeiner/Documents/studies/biology/EpitopeWorkshop/data/iedb_linear_epitopes.fasta --limit-sequences-amt 150`
 
 # Maintain
 To facilitate working with the DF's fields, manage all field names in the `common.contract` file
