@@ -15,5 +15,6 @@ setup(
         'quantiprot',
         'fire',
         'memoization',
+        'dask'
     ]
 )

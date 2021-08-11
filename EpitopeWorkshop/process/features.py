@@ -3,8 +3,8 @@ from Bio.SeqUtils import ProtParamData
 from Bio.SeqUtils.ProtParam import ProteinAnalysis
 from memoization import cached
 from quantiprot.metrics.aaindex import get_aa2volume
-
-from EpitopeWorkshop.common import vars
+import dask.dataframe as dd
+from EpitopeWorkshop.common import vars, conf
 from EpitopeWorkshop.common.contract import *
 
 GROUPED_AA = {
@@ -22,11 +22,28 @@ def add_group_type_values(d: dict) -> dict:
         new_dict[group] = sum([float(d[item]) for item in keys]) / len(keys)
     return new_dict
 
+
+def create_meta():
+    base_meta = {
+        HYDROPHOBICITY_COL_NAME: 'f8',
+        COMPUTED_VOLUME_COL_NAME: 'f8',
+        SS_COL_NAME: '?',
+        RSA_COL_NAME: 'f8',
+        IS_POLAR_PROBA_COL_NAME: 'f8'
+    }
+    for col in TYPE_COLUMNS.values():
+        base_meta[col] = '?'
+
+    return base_meta
+
+
 class FeatureCalculator:
     AA_TO_VOLUME_MAPPING = add_group_type_values(get_aa2volume().mapping)
     AA_TO_HYDROPHPBICITY_MAPPING = add_group_type_values(ProtParamData.kd)
     AA_TO_POLARITY_MAPPING = add_group_type_values(vars.AMINO_ACIDS_POLARITY_MAPPING)
     AA_TO_SURFACE_ACCESSIBILITY = add_group_type_values(ProtParamData.em)
+
+    APPLY_META = create_meta()
 
     def _key_seq_id_amino(self, row: pd.Series):
         return row[ID_COL_NAME], row[AMINO_ACID_SUBSEQ_INDEX_COL_NAME]
@@ -78,7 +95,7 @@ class FeatureCalculator:
         aa_type = self._calculate_type(row)
         analyzed_seq = self._calculate_analyzed_sequence(row)
         all_features = {
-            ANALYZED_SEQ_COL_NAME: analyzed_seq,
+            # ANALYZED_SEQ_COL_NAME: analyzed_seq,
             HYDROPHOBICITY_COL_NAME: self._calculate_hydrophobicity(aa_type),
             COMPUTED_VOLUME_COL_NAME: self._calculate_computed_volume(aa_type),
             SS_COL_NAME: self._calculate_secondary_surface(analyzed_seq),
@@ -91,7 +108,7 @@ class FeatureCalculator:
 
         return all_features
 
-    def calculate_features(self, df: pd.DataFrame) -> pd.DataFrame:
-        calculated_features = df.apply(self.calculate_row_features, axis=1, result_type='expand')
-        df = pd.concat([df, calculated_features], axis=1)
-        return df
+    def calculate_features(self, ddf: dd.DataFrame) -> dd.DataFrame:
+        calculated_features = ddf.apply(self.calculate_row_features, axis=1, result_type='expand', meta=self.APPLY_META)
+        ddf = dd.concat([ddf, calculated_features], axis=1).compute()
+        return ddf
