@@ -4,6 +4,7 @@ SEQ_COL_NAME = 'sequence'
 SUB_SEQ_COL_NAME = 'sub_sequence'
 AMINO_ACID_SEQ_INDEX_COL_NAME = 'amino_acid_seq_index'
 AMINO_ACID_SUBSEQ_INDEX_COL_NAME = 'amino_acid_subseq_index'
+IS_IN_EPITOPE_COL_NAME = 'is_in_epitope'
 
 # Feature fields
 ANALYZED_SEQ_COL_NAME = 'analyzed_sequence'

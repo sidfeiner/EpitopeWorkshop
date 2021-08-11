@@ -22,6 +22,7 @@ def read_fasta(path: str, with_sliding_window: bool = True,
     sub_seqs = []
     amino_acid_index_in_seq = []
     amino_acid_index_in_subseq = []
+    is_in_epitope = []
     with open(path) as handle:
         for idx, record in enumerate(SeqIO.parse(handle, "fasta")):
             current_sub_seqs = split_to_subsequences(record.seq, sliding_window_size) if with_sliding_window else [
@@ -37,11 +38,13 @@ def read_fasta(path: str, with_sliding_window: bool = True,
             amino_acid_index_in_seq.extend(
                 (sub_seq_ix + index for sub_seq_ix, sub_seq in enumerate(current_sub_seqs) for index in range(len(sub_seq))))
             amino_acid_index_in_subseq.extend((index for sub_seq in current_sub_seqs for index in range(len(sub_seq))))
+            is_in_epitope.extend((aa.isupper() for sub_seq in current_sub_seqs for aa in sub_seq))
             if len(record.features):
                 print(f"found features: {record.features}")
             if limit_sequences_amt is not None and limit_sequences_amt == idx:
                 break
 
     data = {ID_COL_NAME: ids, SEQ_COL_NAME: seqs, AMINO_ACID_SEQ_INDEX_COL_NAME: amino_acid_index_in_seq,
-            SUB_SEQ_COL_NAME: sub_seqs, AMINO_ACID_SUBSEQ_INDEX_COL_NAME: amino_acid_index_in_subseq}
+            SUB_SEQ_COL_NAME: sub_seqs, AMINO_ACID_SUBSEQ_INDEX_COL_NAME: amino_acid_index_in_subseq,
+            IS_IN_EPITOPE_COL_NAME: is_in_epitope}
     return pd.DataFrame(data)
