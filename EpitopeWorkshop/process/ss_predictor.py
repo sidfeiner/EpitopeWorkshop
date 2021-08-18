@@ -2,8 +2,7 @@ from typing import Generator
 
 from Bio.Seq import Seq
 from Bio.SeqUtils.ProtParam import ProteinAnalysis
-
-from EpitopeWorkshop.common import utils
+from EpitopeWorkshop.common import conf
 
 # Proline and Glycine have poor helix-forming propensities according to
 # https://www.sciencedirect.com/topics/chemistry/alpha-helix
@@ -11,9 +10,10 @@ NON_HELIX_AMINO_ACIDS = ['G', 'P']
 
 
 class SecondaryStructurePredictor:
-    def __init__(self, min_window: int, max_window: int):
+    def __init__(self, min_window: int, max_window: int, threshold: float = conf.DEFAULT_SS_PREDICTOR_THRESHOLD):
         self.min_window = min_window
         self.max_window = max_window
+        self.threshold = threshold
 
     def _create_subsequence_generator(self, full_sequence: str, aa_index: int) -> Generator[Seq, None, None]:
         for window_size in range(self.min_window, self.max_window + 1):
@@ -46,4 +46,7 @@ class SecondaryStructurePredictor:
         alpha_helix_proba = 0 if self.is_non_alpha_helix_amino_acid(amino_acid) else alpha_helix_sum / subsequences_cnt
         beta_sheet_proba = beta_sheet_sum / subsequences_cnt
 
-        return alpha_helix_proba, beta_sheet_proba
+        return (
+            0 if alpha_helix_proba < self.threshold else alpha_helix_proba,
+            0 if beta_sheet_proba < self.threshold else beta_sheet_proba
+        )

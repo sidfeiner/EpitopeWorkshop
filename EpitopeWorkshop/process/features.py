@@ -48,9 +48,11 @@ class FeatureCalculator:
 
     APPLY_META = create_meta()
 
-    def __init__(self, ss_prediction_min_window_size: int = 10, ss_prediction_max_window_size: int = 10):
+    def __init__(self, ss_prediction_min_window_size: int = 10, ss_prediction_max_window_size: int = 10,
+                 ss_prediction_threshold: float = conf.DEFAULT_SS_PREDICTOR_THRESHOLD):
         self.secondary_structure_predictor = SecondaryStructurePredictor(ss_prediction_min_window_size,
-                                                                         ss_prediction_max_window_size)
+                                                                         ss_prediction_max_window_size,
+                                                                         threshold=ss_prediction_threshold)
 
     def _key_seq_id_amino(self, row: pd.Series):
         return row[ID_COL_NAME], row[AMINO_ACID_SUBSEQ_INDEX_COL_NAME]
