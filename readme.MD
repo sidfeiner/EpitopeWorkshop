@@ -22,4 +22,4 @@ For example: `main.py --sequences_file_path ./data/iedb_linear_epitopes.fasta --
 
 # Maintain
 To facilitate working with the DF's fields, manage all field names in the `common.contract` file
-and use those variables in the code anywhere you interact with the DF. 
+and use those variables in the code anywhere you interact with the DF.

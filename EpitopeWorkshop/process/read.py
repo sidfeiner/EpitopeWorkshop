@@ -2,15 +2,10 @@ from typing import List, Optional
 
 from Bio import SeqIO, Seq
 import pandas as pd
+
+from EpitopeWorkshop.common import utils
 from EpitopeWorkshop.common.contract import *
 from EpitopeWorkshop.common.conf import DEFAULT_WINDOW_SIZE
-
-
-def split_to_subsequences(sequence: Seq, size: int) -> List[str]:
-    sub_seqs = []
-    for start_index in range(len(sequence) - size + 1):
-        sub_seqs.append(sequence[start_index:start_index + size])
-    return sub_seqs
 
 
 def read_fasta(path: str, with_sliding_window: bool = True,
@@ -25,7 +20,7 @@ def read_fasta(path: str, with_sliding_window: bool = True,
     is_in_epitope = []
     with open(path) as handle:
         for idx, record in enumerate(SeqIO.parse(handle, "fasta")):
-            current_sub_seqs = split_to_subsequences(record.seq, sliding_window_size) if with_sliding_window else [
+            current_sub_seqs = utils.split_to_subsequences(record.seq, sliding_window_size) if with_sliding_window else [
                 record.seq]
             if with_sliding_window:
                 assert len(current_sub_seqs) == (len(record.seq) - sliding_window_size + 1)

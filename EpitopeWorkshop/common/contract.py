@@ -12,7 +12,8 @@ COMPUTED_VOLUME_COL_NAME = 'computed_volume'
 HYDROPHOBICITY_COL_NAME = 'hydrophobicity'
 POLARITY_COL_NAME = 'polarity'
 RSA_COL_NAME = 'rsa'
-SS_COL_NAME = 'ss'
+SS_ALPHA_HELIX_PROBA = 'secondary_structure_alpha_helix_proba'
+SS_BETA_SHEET_PROBA = 'secondary_structure_beta_sheet_proba'
 IS_POLAR_PROBA_COL_NAME = "is_polar"
 
 # Categorical type columns

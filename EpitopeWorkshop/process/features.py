@@ -1,11 +1,13 @@
 import pandas as pd
+from Bio.Seq import Seq
 from Bio.SeqUtils import ProtParamData
 from Bio.SeqUtils.ProtParam import ProteinAnalysis
 from memoization import cached
 from quantiprot.metrics.aaindex import get_aa2volume
 import dask.dataframe as dd
-from EpitopeWorkshop.common import vars, conf
+from EpitopeWorkshop.common import vars, conf, utils
 from EpitopeWorkshop.common.contract import *
+from EpitopeWorkshop.process.ss_predictor import SecondaryStructurePredictor
 
 GROUPED_AA = {
     'X': None,
@@ -27,7 +29,8 @@ def create_meta():
     base_meta = {
         HYDROPHOBICITY_COL_NAME: 'f8',
         COMPUTED_VOLUME_COL_NAME: 'f8',
-        SS_COL_NAME: '?',
+        SS_ALPHA_HELIX_PROBA: 'f8',
+        SS_BETA_SHEET_PROBA: 'f8',
         RSA_COL_NAME: 'f8',
         IS_POLAR_PROBA_COL_NAME: 'f8'
     }
@@ -44,6 +47,10 @@ class FeatureCalculator:
     AA_TO_SURFACE_ACCESSIBILITY = add_group_type_values(ProtParamData.em)
 
     APPLY_META = create_meta()
+
+    def __init__(self, ss_prediction_min_window_size: int = 10, ss_prediction_max_window_size: int = 10):
+        self.secondary_structure_predictor = SecondaryStructurePredictor(ss_prediction_min_window_size,
+                                                                         ss_prediction_max_window_size)
 
     def _key_seq_id_amino(self, row: pd.Series):
         return row[ID_COL_NAME], row[AMINO_ACID_SUBSEQ_INDEX_COL_NAME]
@@ -75,8 +82,9 @@ class FeatureCalculator:
         """NOT GOOD ENOUGH, FIX!"""
         return self.AA_TO_SURFACE_ACCESSIBILITY[aa_type]
 
-    def _calculate_secondary_surface(self, analyzed_seq):
-        return analyzed_seq.secondary_structure_fraction()
+    def _calculate_secondary_surface(self, analyzed_seq: str, aa_index: int):
+        alpha_proba, beta_proba = self.secondary_structure_predictor.predict(analyzed_seq, aa_index)
+        return alpha_proba, beta_proba
 
     def _calculate_type(self, row: pd.Series):
         return row[SEQ_COL_NAME][row[AMINO_ACID_SEQ_INDEX_COL_NAME]].upper()
@@ -94,11 +102,16 @@ class FeatureCalculator:
     def calculate_row_features(self, row: pd.Series) -> dict:
         aa_type = self._calculate_type(row)
         analyzed_seq = self._calculate_analyzed_sequence(row)
+        sequence = row[SEQ_COL_NAME]
+        aa_index = row[AMINO_ACID_SEQ_INDEX_COL_NAME]
+
+        alpha_proba, beta_proba = self._calculate_secondary_surface(str(sequence), aa_index)
         all_features = {
             # ANALYZED_SEQ_COL_NAME: analyzed_seq,
             HYDROPHOBICITY_COL_NAME: self._calculate_hydrophobicity(aa_type),
             COMPUTED_VOLUME_COL_NAME: self._calculate_computed_volume(aa_type),
-            SS_COL_NAME: self._calculate_secondary_surface(analyzed_seq),
+            SS_ALPHA_HELIX_PROBA: alpha_proba,
+            SS_BETA_SHEET_PROBA: alpha_proba,
             RSA_COL_NAME: self._calculate_relative_surface_accessibility(aa_type),
             IS_POLAR_PROBA_COL_NAME: self._calculate_polarity(aa_type)
         }
