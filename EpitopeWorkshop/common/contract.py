@@ -60,3 +60,18 @@ TYPE_COLUMNS = {
     'Y': IS_TYPE_Y_COL_NAME,
     'V': IS_TYPE_V_COL_NAME,
 }
+
+NETWORK_INPUT_ARGS = [ANALYZED_SEQ_COL_NAME, COMPUTED_VOLUME_COL_NAME,
+                      HYDROPHOBICITY_COL_NAME, POLARITY_COL_NAME,
+                      RSA_COL_NAME, SS_ALPHA_HELIX_PROBA,
+                      SS_BETA_SHEET_PROBA, IS_POLAR_PROBA_COL_NAME,
+                      IS_TYPE_A_COL_NAME, IS_TYPE_R_COL_NAME,
+                      IS_TYPE_N_COL_NAME, IS_TYPE_D_COL_NAME,
+                      IS_TYPE_C_COL_NAME, IS_TYPE_Q_COL_NAME,
+                      IS_TYPE_E_COL_NAME, IS_TYPE_G_COL_NAME,
+                      IS_TYPE_H_COL_NAME, IS_TYPE_I_COL_NAME,
+                      IS_TYPE_L_COL_NAME, IS_TYPE_K_COL_NAME,
+                      IS_TYPE_M_COL_NAME, IS_TYPE_F_COL_NAME,
+                      IS_TYPE_P_COL_NAME, IS_TYPE_S_COL_NAME,
+                      IS_TYPE_T_COL_NAME, IS_TYPE_W_COL_NAME,
+                      IS_TYPE_Y_COL_NAME, IS_TYPE_V_COL_NAME]
