@@ -43,7 +43,7 @@ def load_fasta_fasta(path: str, with_sliding_window: bool = True,
                 (sub_seq_ix + index for sub_seq_ix, sub_seq in enumerate(current_sub_seqs) for index in
                  range(len(sub_seq))))
             amino_acid_index_in_subseq.extend((index for sub_seq in current_sub_seqs for index in range(len(sub_seq))))
-            is_in_epitope.extend((aa.isupper() for sub_seq in current_sub_seqs for aa in sub_seq))
+            is_in_epitope.extend((int(aa.isupper()) for sub_seq in current_sub_seqs for aa in sub_seq))
             if len(record.features):
                 print(f"found features: {record.features}")
             if limit_sequences_amt is not None and limit_sequences_amt == idx:
