@@ -1,11 +1,5 @@
-import torch
-import torchvision
-import torch.utils.data
-import torchvision.transforms
 from torch.utils import data
-import pandas as pd
 import torch.nn as nn
-import torch.nn.functional as F
 import torch.optim as optim
 
 from EpitopeWorkshop.common.contract import *
