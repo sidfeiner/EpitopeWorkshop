@@ -29,13 +29,13 @@ def create_meta():
     base_meta = {
         HYDROPHOBICITY_COL_NAME: 'f8',
         COMPUTED_VOLUME_COL_NAME: 'f8',
-        SS_ALPHA_HELIX_PROBA: 'f8',
-        SS_BETA_SHEET_PROBA: 'f8',
+        SS_ALPHA_HELIX_PROBA_COL_NAME: 'f8',
+        SS_BETA_SHEET_PROBACOL_NAME: 'f8',
         RSA_COL_NAME: 'f8',
         IS_POLAR_PROBA_COL_NAME: 'f8'
     }
     for col in TYPE_COLUMNS.values():
-        base_meta[col] = '?'
+        base_meta[col] = 'i'
 
     return base_meta
 
@@ -94,16 +94,16 @@ class FeatureCalculator:
     @cached
     def _calculate_all_types(self, aa_type: str):
         if aa_type == 'X':
-            return {col_name: True for col_name in TYPE_COLUMNS.values()}
+            return {col_name: 1 for col_name in TYPE_COLUMNS.values()}
         possible_values = GROUPED_AA.get(aa_type, [aa_type])
-        return {col_name: t in possible_values for t, col_name in TYPE_COLUMNS.items()}
+        return {col_name: int(t in possible_values) for t, col_name in TYPE_COLUMNS.items()}
 
     def _add_default_value_column(self, df: pd.DataFrame, column_name: str, default_val):
         df[column_name] = default_val
 
     def calculate_row_features(self, row: pd.Series) -> dict:
         aa_type = self._calculate_type(row)
-        analyzed_seq = self._calculate_analyzed_sequence(row)
+        # analyzed_seq = self._calculate_analyzed_sequence(row)
         sequence = row[SEQ_COL_NAME]
         aa_index = row[AMINO_ACID_SEQ_INDEX_COL_NAME]
 
@@ -112,8 +112,8 @@ class FeatureCalculator:
             # ANALYZED_SEQ_COL_NAME: analyzed_seq,
             HYDROPHOBICITY_COL_NAME: self._calculate_hydrophobicity(aa_type),
             COMPUTED_VOLUME_COL_NAME: self._calculate_computed_volume(aa_type),
-            SS_ALPHA_HELIX_PROBA: alpha_proba,
-            SS_BETA_SHEET_PROBA: alpha_proba,
+            SS_ALPHA_HELIX_PROBA_COL_NAME: alpha_proba,
+            SS_BETA_SHEET_PROBACOL_NAME: alpha_proba,
             RSA_COL_NAME: self._calculate_relative_surface_accessibility(aa_type),
             IS_POLAR_PROBA_COL_NAME: self._calculate_polarity(aa_type)
         }
