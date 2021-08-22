@@ -20,7 +20,6 @@ class CNN(nn.Module):
             nn.Conv2d(in_channels=6, out_channels=10, kernel_size=4),
             nn.ReLU(),
 
-
         )
         self.classifier = nn.Sequential(
             nn.Linear(16*5*5, 120),
@@ -38,9 +37,7 @@ class CNN(nn.Module):
 
     @staticmethod
     def to_tensor(data: pd.DataFrame) -> torch.Tensor:
-        features = torch.tensor(data[NETWORK_INPUT_ARGS, :])
-        features = features.view(features.size(0), -1)
-        probability = self.classifier(features)
+        tensor = torch.tensor(data[NETWORK_INPUT_ARGS, :])
         return probability
 
 
