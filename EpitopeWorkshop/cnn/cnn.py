@@ -9,12 +9,12 @@ from EpitopeWorkshop.common.conf import DEFAULT_EPOCHS
 
 
 class CNN(nn.Module):
-    def __init__(self, in_channels):
+    def __init__(self, in_channels, first_out, first_ker, sec_out, sec_ker):
         super().__init__()
         self.feature_extractor = nn.Sequential(
-            nn.Conv2d(in_channels, out_channels=6, kernel_size=3),
+            nn.Conv2d(in_channels, out_channels=first_out, kernel_size=first_ker),
             nn.ReLU(),
-            nn.Conv2d(in_channels=6, out_channels=10, kernel_size=4),
+            nn.Conv2d(in_channels=first_out, out_channels=sec_out, kernel_size=sec_ker),
             nn.ReLU(),
 
         )
@@ -112,3 +112,5 @@ class CNN(nn.Module):
                     running_loss = 0.0
 
         print('Finished Training')
+
+
