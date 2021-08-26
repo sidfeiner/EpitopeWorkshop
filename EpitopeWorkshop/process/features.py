@@ -1,4 +1,7 @@
+from typing import List
+
 import pandas as pd
+import torch
 from Bio.Seq import Seq
 from Bio.SeqUtils import ProtParamData
 from Bio.SeqUtils.ProtParam import ProteinAnalysis
@@ -101,29 +104,34 @@ class FeatureCalculator:
     def _add_default_value_column(self, df: pd.DataFrame, column_name: str, default_val):
         df[column_name] = default_val
 
-    def calculate_row_features(self, row: pd.Series) -> dict:
-        aa_type = self._calculate_type(row)
-        # analyzed_seq = self._calculate_analyzed_sequence(row)
+    def calculate_row_features(self, row: pd.Series) -> torch.Tensor:
         sequence = row[SEQ_COL_NAME]
-        aa_index = row[AMINO_ACID_SEQ_INDEX_COL_NAME]
+        sub_sequence = row[SUB_SEQ_COL_NAME]
+        sub_sequence_index = row[SUB_SEQ_INDEX_START_COL_NAME]
+        subseq_features = []  # type: List[torch.Tensor]
+        for aa_rel_index, aa in enumerate(sub_sequence):
+            aa = aa.upper()
+            aa_abs_index = sub_sequence_index + aa_rel_index
+            alpha_proba, beta_proba = self._calculate_secondary_surface(str(sequence), aa_abs_index)
 
-        alpha_proba, beta_proba = self._calculate_secondary_surface(str(sequence), aa_index)
-        all_features = {
-            # ANALYZED_SEQ_COL_NAME: analyzed_seq,
-            HYDROPHOBICITY_COL_NAME: self._calculate_hydrophobicity(aa_type),
-            COMPUTED_VOLUME_COL_NAME: self._calculate_computed_volume(aa_type),
-            SS_ALPHA_HELIX_PROBA_COL_NAME: alpha_proba,
-            SS_BETA_SHEET_PROBACOL_NAME: alpha_proba,
-            RSA_COL_NAME: self._calculate_relative_surface_accessibility(aa_type),
-            IS_POLAR_PROBA_COL_NAME: self._calculate_polarity(aa_type)
-        }
+            type_features = self._calculate_all_types(aa)
+            features = {
+                HYDROPHOBICITY_COL_NAME: self._calculate_hydrophobicity(aa),
+                COMPUTED_VOLUME_COL_NAME: self._calculate_computed_volume(aa),
+                SS_ALPHA_HELIX_PROBA_COL_NAME: alpha_proba,
+                SS_BETA_SHEET_PROBACOL_NAME: alpha_proba,
+                RSA_COL_NAME: self._calculate_relative_surface_accessibility(aa),
+                IS_POLAR_PROBA_COL_NAME: self._calculate_polarity(aa)
+            }
 
-        type_features = self._calculate_all_types(aa_type)
-        all_features.update(type_features)
+            features.update(type_features)
+            lst_features = [features[feature] for feature in FEATURES_ORDER]
 
-        return all_features
+            subseq_features.append(torch.FloatTensor(lst_features))
+
+        return torch.stack(subseq_features)
 
     def calculate_features(self, ddf: dd.DataFrame) -> dd.DataFrame:
-        calculated_features = ddf.apply(self.calculate_row_features, axis=1, result_type='expand', meta=self.APPLY_META)
+        calculated_features = ddf.apply(self.calculate_row_features, axis=1, meta=('O')).rename(CALCULATED_FEATURES)
         ddf = dd.concat([ddf, calculated_features], axis=1).compute()
         return ddf
