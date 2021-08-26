@@ -3,7 +3,7 @@ from typing import Iterable
 import torch
 from torch.utils import data
 import pandas as pd
-
+import numpy as np
 from EpitopeWorkshop.common import utils, conf, contract
 from EpitopeWorkshop.common.conf import *
 
@@ -17,7 +17,7 @@ class EpitopeDataset(data.TensorDataset):
             Remaining keyword arguments: Passed to the constructor of
                 data.Dataset.
         """
-        super(EpitopeDataset, self).__init__(*torch.tensor(data.values))
+        super(EpitopeDataset, self).__init__(*torch.tensor(data.values.astype(np.float32)))
         self.data = data
 
     def splits(self):
