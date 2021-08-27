@@ -132,6 +132,7 @@ class FeatureCalculator:
         return torch.stack(subseq_features)
 
     def calculate_features(self, ddf: dd.DataFrame) -> dd.DataFrame:
+        ddf[IS_IN_EPITOPE_COL_NAME] = ddf[IS_IN_EPITOPE_COL_NAME].apply(torch.LongTensor, meta=('O'))
         calculated_features = ddf.apply(self.calculate_row_features, axis=1, meta=('O')).rename(CALCULATED_FEATURES)
-        ddf = dd.concat([ddf, calculated_features], axis=1).compute()
-        return ddf
+        ddf = dd.concat([ddf, calculated_features], axis=1)
+        return ddf.compute()

@@ -1,5 +1,9 @@
+import math
+import random
 import time
 from typing import List, Optional, Union
+
+import torch
 from Bio.Seq import Seq
 import pandas as pd
 import numpy as np
@@ -19,3 +23,20 @@ def df_random_split(df: pd.DataFrame, split_pct: float) -> (pd.DataFrame, pd.Dat
     train = df[msk]
     test = df[~msk]
     return train, test
+
+
+def series_random_split(series: List[pd.Series], split_pct: float) -> (List[pd.Series], List[pd.Series]):
+    msk = np.random.rand(len(series[0])) < split_pct
+    train = [ser[msk].reset_index(drop=True) for ser in series]
+    test = [ser[~msk].reset_index(drop=True) for ser in series]
+    return train, test
+
+
+def tensor_random_split(tensor: torch.Tensor, split_pct: float) -> (torch.Tensor, torch.Tensor):
+    tensor1, tensor2 = [], []
+    for item in tensor:
+        if random.random() <= split_pct:
+            tensor1.append(item)
+        else:
+            tensor2.append(item)
+    return torch.FloatTensor(tensor1), torch.FloatTensor(tensor2)

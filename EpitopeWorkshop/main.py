@@ -10,10 +10,6 @@ from EpitopeWorkshop.process import read, features
 from EpitopeWorkshop.common.conf import *
 from EpitopeWorkshop.process.features import FeatureCalculator
 from EpitopeWorkshop.cnn.cnn import CNN
-import torch.optim as optim
-import torch.nn as nn
-from EpitopeWorkshop.common.contract import NETWORK_INPUT_ARGS
-
 
 def main(sequences_file_path: str, partitions_amt: int = DEFAULT_PARTITIONS_AMT,
          with_sliding_window: bool = DEFAULT_WITH_SLIDING_WINDOW,
@@ -24,24 +20,19 @@ def main(sequences_file_path: str, partitions_amt: int = DEFAULT_PARTITIONS_AMT,
     df = calculator.calculate_features(ddf)
     print(df[:20])
 
-    sub_df = df[contract.NETWORK_LABELED_INPUT_ARGS]
-    labels_df = df[contract.IS_IN_EPITOPE_COL_NAME]
-    ds = EpitopeDataset(sub_df)
+    calculated_features = df[contract.CALCULATED_FEATURES]
+    labels = df[contract.IS_IN_EPITOPE_COL_NAME]
+    ds = EpitopeDataset(calculated_features, labels)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     ds_train, ds_valid, ds_test = ds.splits()
     print(len(ds_train), len(ds_valid), len(ds_test))
 
-    dl_train, dl_valid, dl_test = ds.iters(batch_size=26)
+    batch_size = 20
+    dl_train, dl_valid, dl_test = ds.iters(batch_size=batch_size)
 
     x0, y0 = ds[0]
 
-    print(len(NETWORK_INPUT_ARGS))
-
-    cn = CNN(len(NETWORK_INPUT_ARGS), 26, 1, 5, 1)
-
-    criterion = nn.CrossEntropyLoss()
-    optimizer = optim.SGD(cn.parameters(), lr=0.001, momentum=0.9)
-    print(type(cn))
+    cn = CNN(window_size, batch_size, len(contract.FEATURES_ORDER))
 
     a, b, c, d = cn.training_loop(dl_train=dl_train)
 
