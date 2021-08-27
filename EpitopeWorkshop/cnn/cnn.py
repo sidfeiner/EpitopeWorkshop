@@ -5,6 +5,7 @@ import torch
 import pandas as pd
 
 KERNEL_SIZE = 3
+OUT_CHANNELS = 10
 
 
 class CNN(nn.Module):
@@ -13,12 +14,12 @@ class CNN(nn.Module):
         self.feature_extractor = nn.Sequential(
             nn.Conv2d(in_channels, out_channels=6, kernel_size=KERNEL_SIZE, padding=1),
             nn.ReLU(),
-            nn.Conv2d(in_channels=6, out_channels=10, kernel_size=KERNEL_SIZE, padding=1),
+            nn.Conv2d(in_channels=6, out_channels=OUT_CHANNELS, kernel_size=KERNEL_SIZE, padding=1),
             nn.ReLU(),
 
         )
         self.classifier = nn.Sequential(
-            nn.Linear(16 * 9 * 26, 120),
+            nn.Linear(OUT_CHANNELS * KERNEL_SIZE * KERNEL_SIZE * 26, 120),
             nn.ReLU(),
             nn.Linear(120, 1),
             nn.Sigmoid()
