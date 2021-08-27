@@ -4,8 +4,7 @@ from typing import Optional
 import fire
 import dask.dataframe as dd
 import torch
-
-from EpitopeWorkshop.cnn.train import training_loop
+import torch.nn as nn
 from EpitopeWorkshop.common import contract
 from EpitopeWorkshop.dataset.EpitopeDataset import EpitopeDataset
 from EpitopeWorkshop.process import read, features
@@ -20,7 +19,6 @@ def main(sequences_file_path: str, partitions_amt: int = DEFAULT_PARTITIONS_AMT,
     ddf = dd.from_pandas(df, npartitions=partitions_amt)
     calculator = FeatureCalculator()
     df = calculator.calculate_features(ddf)
-    print(df[:20])
 
     calculated_features = df[contract.CALCULATED_FEATURES]
     labels = df[contract.IS_IN_EPITOPE_COL_NAME]
@@ -29,14 +27,11 @@ def main(sequences_file_path: str, partitions_amt: int = DEFAULT_PARTITIONS_AMT,
     ds_train, ds_valid, ds_test = ds.splits()
     print(len(ds_train), len(ds_valid), len(ds_test))
 
-    batch_size = 25
+    batch_size = 20
     dl_train, dl_valid, dl_test = ds.iters(batch_size=batch_size)
 
-    x0, y0 = ds[0]
-
-    cn = CNN()
-
-    a, b, c, d = training_loop(cn, dl_train=dl_train)
+    cn = CNN(1, 10, 20)
+    a, b, c, d = cn.training_loop(dl_train=dl_train)
 
 
 if __name__ == '__main__':
