@@ -1,27 +1,24 @@
-from torch.utils import data
+
 import torch.nn as nn
 import torch.optim as optim
 import torch
 import pandas as pd
 
-from EpitopeWorkshop.common.contract import *
-from EpitopeWorkshop.common.conf import DEFAULT_EPOCHS
-
 KERNEL_SIZE = 3
 
 
 class CNN(nn.Module):
-    def __init__(self, in_channels, first_out, sec_out):
+    def __init__(self, in_channels=1):
         super().__init__()
         self.feature_extractor = nn.Sequential(
-            nn.Conv2d(in_channels, out_channels=first_out, kernel_size=KERNEL_SIZE, padding=(1, 1)),
+            nn.Conv2d(in_channels, out_channels=6, kernel_size=KERNEL_SIZE, padding=1),
             nn.ReLU(),
-            nn.Conv2d(in_channels=first_out, out_channels=sec_out, kernel_size=KERNEL_SIZE, padding=(1, 1)),
+            nn.Conv2d(in_channels=6, out_channels=10, kernel_size=KERNEL_SIZE, padding=1),
             nn.ReLU(),
 
         )
         self.classifier = nn.Sequential(
-            nn.Linear(5 * 5 * 5, 120),
+            nn.Linear(16 * 9 * 26, 120),
             nn.ReLU(),
             nn.Linear(120, 1),
             nn.Sigmoid()
@@ -83,28 +80,4 @@ class CNN(nn.Module):
 
     # for epoch in range(2):  # loop over the dataset multiple times
 
-    def training_loop(model: 'CNN', dl_train: data.Dataset, epoch_amt: int = DEFAULT_EPOCHS):
-        for epoch in range(epoch_amt):  # loop over the dataset multiple times
-            print(f"running for epoch {epoch + 1}")
-            running_loss = 0.0
-            for i, data in enumerate(dl_train):
-                # get the inputs; data is a list of [inputs, labels]
-                inputs, labels = data
 
-                # zero the parameter gradients
-                model.optimizer.zero_grad()
-
-                # forward + backward + optimize
-                outputs = model(inputs)
-                # loss = model.criterion(outputs, labels)
-                # loss.backward()
-                model.optimizer.step()
-
-                # print statistics
-                # running_loss += loss.item()
-                if i % 2000 == 1999:  # print every 2000 mini-batches
-                    print('[%d, %5d] loss: %.3f' %
-                          (epoch + 1, i + 1, running_loss / 2000))
-                    running_loss = 0.0
-
-        print('Finished Training')

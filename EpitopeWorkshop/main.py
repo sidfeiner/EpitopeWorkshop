@@ -4,6 +4,8 @@ from typing import Optional
 import fire
 import dask.dataframe as dd
 import torch
+
+from EpitopeWorkshop.cnn.train import training_loop
 from EpitopeWorkshop.common import contract
 from EpitopeWorkshop.dataset.EpitopeDataset import EpitopeDataset
 from EpitopeWorkshop.process import read, features
@@ -27,14 +29,14 @@ def main(sequences_file_path: str, partitions_amt: int = DEFAULT_PARTITIONS_AMT,
     ds_train, ds_valid, ds_test = ds.splits()
     print(len(ds_train), len(ds_valid), len(ds_test))
 
-    batch_size = 20
+    batch_size = 25
     dl_train, dl_valid, dl_test = ds.iters(batch_size=batch_size)
 
     x0, y0 = ds[0]
 
-    cn = CNN(window_size, batch_size, len(contract.FEATURES_ORDER))
+    cn = CNN()
 
-    a, b, c, d = cn.training_loop(dl_train=dl_train)
+    a, b, c, d = training_loop(cn, dl_train=dl_train)
 
 
 if __name__ == '__main__':
