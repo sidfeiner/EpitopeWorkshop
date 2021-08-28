@@ -1,11 +1,7 @@
-from typing import Iterable, List
-
 import torch
-import torchvision
 from torch.utils import data
 import pandas as pd
-import numpy as np
-from EpitopeWorkshop.common import utils, conf, contract
+from EpitopeWorkshop.common import utils
 from EpitopeWorkshop.common.conf import *
 
 

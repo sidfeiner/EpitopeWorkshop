@@ -2,7 +2,6 @@ from typing import List
 
 import pandas as pd
 import torch
-from Bio.Seq import Seq
 from Bio.SeqUtils import ProtParamData
 from Bio.SeqUtils.ProtParam import ProteinAnalysis
 from memoization import cached
@@ -132,7 +131,7 @@ class FeatureCalculator:
         return torch.stack(subseq_features).unsqueeze(0)  # Add channel dimension
 
     def calculate_features(self, ddf: dd.DataFrame) -> dd.DataFrame:
-        calculated_features = ddf.apply(self.calculate_row_features, axis=1, meta=('O')) \
+        calculated_features = ddf.apply(self.calculate_row_features, axis=1, meta='O') \
             .rename(CALCULATED_FEATURES_COL_NAME)
         ddf = dd.concat([ddf, calculated_features], axis=1)
         return ddf.compute()

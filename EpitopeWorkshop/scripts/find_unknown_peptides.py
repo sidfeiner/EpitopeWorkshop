@@ -1,12 +1,9 @@
 import os
 from glob import glob
-from typing import List, Set, Optional
+from typing import Set, Optional
 
 import fire
 from Bio import SeqIO
-from Bio.PDB import PDBParser
-
-from EpitopeWorkshop.common import contract
 from EpitopeWorkshop.process.read import load_sequences_from_fasta
 
 

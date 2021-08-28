@@ -3,15 +3,13 @@ from typing import Optional
 import fire
 import dask.dataframe as dd
 import pandas as pd
-import torch
-import torchvision
 
 from EpitopeWorkshop.cnn.train import train_model
 from EpitopeWorkshop.common import contract
 from EpitopeWorkshop.dataset.EpitopeDataset import EpitopeDataset
 from EpitopeWorkshop.process import read
 from EpitopeWorkshop.common.conf import *
-from EpitopeWorkshop.process.balance.balance import DataBalancer, UnderSamplingBalancer, OverSamplingBalancer
+from EpitopeWorkshop.process.balance.balance import OverSamplingBalancer
 from EpitopeWorkshop.process.balance.transform import FeatureTransformer
 from EpitopeWorkshop.process.features import FeatureCalculator
 from EpitopeWorkshop.cnn.cnn import CNN

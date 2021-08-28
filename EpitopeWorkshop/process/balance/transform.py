@@ -15,7 +15,8 @@ class FeatureTransformer:
     def _get_random_pct(self):
         return random.randint(self.min_pct, self.max_pct)
 
-    def _set_proba_val(self, row: np.ndarray, val_index: int, pct_change: int):
+    @staticmethod
+    def _set_proba_val(row: np.ndarray, val_index: int, pct_change: int):
         new_val = row[val_index] * (pct_change / 100)
         if new_val > 1:
             new_val = 1

@@ -1,6 +1,6 @@
 from typing import List, Optional, Set
 
-from Bio import SeqIO, Seq
+from Bio import SeqIO
 import pandas as pd
 
 from EpitopeWorkshop.common import utils

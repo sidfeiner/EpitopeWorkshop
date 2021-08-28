@@ -2,10 +2,8 @@ import torch
 import time
 
 from torch.utils import data
-from EpitopeWorkshop.common.contract import *
 from EpitopeWorkshop.common.conf import DEFAULT_EPOCHS
 from EpitopeWorkshop.cnn.cnn import CNN
-import torch.optim as optim
 
 TEST_BATCH_SIZE = 20
 BATCH_SIZE = 4
