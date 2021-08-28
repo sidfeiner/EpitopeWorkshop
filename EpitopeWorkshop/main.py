@@ -6,7 +6,7 @@ import dask.dataframe as dd
 import torch
 import torch.nn as nn
 
-from EpitopeWorkshop.cnn.train import training_loop
+from EpitopeWorkshop.cnn.train import training_loop, train
 from EpitopeWorkshop.common import contract
 from EpitopeWorkshop.dataset.EpitopeDataset import EpitopeDataset
 from EpitopeWorkshop.process import read, features
@@ -34,6 +34,7 @@ def main(sequences_file_path: str, partitions_amt: int = DEFAULT_PARTITIONS_AMT,
 
     cn = CNN()
     a, b, c, d = training_loop(cn, dl_train=dl_train)
+    a, b, c, d = train(cn, dl_train=dl_train, dl_test=dl_test)
 
 
 if __name__ == '__main__':
