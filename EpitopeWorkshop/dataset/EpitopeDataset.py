@@ -21,18 +21,32 @@ class EpitopeDataset(data.Dataset):
         self.features = features
         self.labels = labels
 
+    def _has_positive_vals(self, labels: pd.Series):
+        in_epitope = labels.apply(lambda x: x[len(x) // 2].item())
+        return len(in_epitope.where(in_epitope == 1)) > 0
+
+    def _splits(self):
+        series_train, series_rest = utils.series_random_split([self.features, self.labels], DEFAULT_TRAIN_DATA_PCT)
+        valid_pct_in_rest = (len(self.features) * DEFAULT_VALID_DATA_PCT) / len(series_rest[0])
+        series_valid, series_test = utils.series_random_split(series_rest, valid_pct_in_rest)
+        return series_train, series_valid, series_test
+
     def splits(self):
         """Create dataset objects for splits of the Epitope dataset.
+        Ensures that every dataset has some positive label
 
         Arguments:
             Remaining keyword arguments: Passed to the splits method of
                 Dataset.
         """
-        df_train, df_rest = utils.series_random_split([self.features, self.labels], DEFAULT_TRAIN_DATA_PCT)
-        valid_pct_in_rest = (len(self.features) * DEFAULT_VALID_DATA_PCT) / len(df_rest[0])
-        df_valid, df_test = utils.series_random_split(df_rest, valid_pct_in_rest)
-
-        return EpitopeDataset(*df_train), EpitopeDataset(*df_valid), EpitopeDataset(*df_test)
+        series_train, series_valid, series_test = self._splits()
+        while not (
+                self._has_positive_vals(series_train[-1]) and
+                self._has_positive_vals(series_valid[-1]) and
+                self._has_positive_vals(series_test[-1])
+        ):
+            series_train, series_valid, series_test = self._splits()
+        return EpitopeDataset(*series_train), EpitopeDataset(*series_valid), EpitopeDataset(*series_test)
 
     def iters(self, batch_size=32):
         """Create iterator objects for splits of the Epitope dataset.

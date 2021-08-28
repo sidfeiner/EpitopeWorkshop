@@ -8,14 +8,14 @@ AMINO_ACID_SUBSEQ_INDEX_COL_NAME = 'amino_acid_subseq_index'
 IS_IN_EPITOPE_COL_NAME = 'is_in_epitope'
 
 # Feature fields
-CALCULATED_FEATURES = 'features'
+CALCULATED_FEATURES_COL_NAME = 'features'
 ANALYZED_SEQ_COL_NAME = 'analyzed_sequence'
 COMPUTED_VOLUME_COL_NAME = 'computed_volume'
 HYDROPHOBICITY_COL_NAME = 'hydrophobicity'
 RSA_COL_NAME = 'rsa'
 SS_ALPHA_HELIX_PROBA_COL_NAME = 'secondary_structure_alpha_helix_proba'
-SS_BETA_SHEET_PROBACOL_NAME = 'secondary_structure_beta_sheet_proba'
-IS_POLAR_PROBA_COL_NAME = "is_polar_proba"
+SS_BETA_SHEET_PROBA_COL_NAME = 'secondary_structure_beta_sheet_proba'
+POLARITY_PROBA_COL_NAME = "is_polar_proba"
 
 # Categorical type columns
 IS_TYPE_A_COL_NAME = "is_type_A"
@@ -62,12 +62,14 @@ TYPE_COLUMNS = {
     'V': IS_TYPE_V_COL_NAME,
 }
 
-FEATURES_ORDER = [
+FEATURES_ORDERED = [
     COMPUTED_VOLUME_COL_NAME,
     HYDROPHOBICITY_COL_NAME,
     RSA_COL_NAME,
     SS_ALPHA_HELIX_PROBA_COL_NAME,
-    SS_BETA_SHEET_PROBACOL_NAME,
-    IS_POLAR_PROBA_COL_NAME,
+    SS_BETA_SHEET_PROBA_COL_NAME,
+    POLARITY_PROBA_COL_NAME,
 ]
-FEATURES_ORDER.extend(TYPE_COLUMNS.values())
+FEATURES_ORDERED.extend(TYPE_COLUMNS.values())
+
+FEATURES_TO_INDEX_MAPPING = {col: index for index, col in enumerate(FEATURES_ORDERED)}

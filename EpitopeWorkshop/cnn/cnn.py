@@ -1,7 +1,7 @@
 import torch.nn as nn
 import torch.optim as optim
-import torch
-import pandas as pd
+
+from EpitopeWorkshop.common import contract
 
 KERNEL_SIZE = 3
 OUT_CHANNELS = 10
@@ -18,7 +18,7 @@ class CNN(nn.Module):
 
         )
         self.classifier = nn.Sequential(
-            nn.Linear(OUT_CHANNELS * KERNEL_SIZE * KERNEL_SIZE * 26, 120),
+            nn.Linear(OUT_CHANNELS * KERNEL_SIZE * KERNEL_SIZE * len(contract.FEATURES_ORDERED), 120),
             nn.ReLU(),
             nn.Linear(120, 1),
             nn.Sigmoid()
