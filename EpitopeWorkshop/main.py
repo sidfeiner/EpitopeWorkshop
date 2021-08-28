@@ -3,6 +3,8 @@ from typing import Optional
 import fire
 import dask.dataframe as dd
 import pandas as pd
+import torch
+import torchvision
 
 from EpitopeWorkshop.cnn.train import train_model
 from EpitopeWorkshop.common import contract
@@ -16,8 +18,8 @@ from EpitopeWorkshop.cnn.cnn import CNN
 
 
 def print_balanced_data(df: pd.DataFrame):
-    vals = df[contract.IS_IN_EPITOPE_COL_NAME].apply(lambda x: x[len(x) // 2].item()).value_counts(normalize=True,
-                                                                                                   sort=True)
+    vals = df[contract.IS_IN_EPITOPE_COL_NAME].value_counts(normalize=True,
+                                                            sort=True)
     print(f"total records: {len(df)}. Frequencies:")
     for val, freq in enumerate(vals):
         print(f"{val}: {freq * 100}%")
@@ -44,7 +46,6 @@ def main(sequences_file_path: str, partitions_amt: int = DEFAULT_PARTITIONS_AMT,
     balancer = OverSamplingBalancer(
         contract.IS_IN_EPITOPE_COL_NAME,
         [(contract.CALCULATED_FEATURES_COL_NAME, feature_transformer.transform)],
-        transform_val_func=lambda x: x[len(x) // 2].item(),
         balances={
             0: 0.5,
             1: 0.5

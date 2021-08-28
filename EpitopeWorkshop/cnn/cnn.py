@@ -20,7 +20,7 @@ class CNN(nn.Module):
         self.classifier = nn.Sequential(
             nn.Linear(OUT_CHANNELS * KERNEL_SIZE * KERNEL_SIZE * len(contract.FEATURES_ORDERED), 120),
             nn.ReLU(),
-            nn.Linear(120, 1),
+            nn.Linear(120, 2),
             nn.Sigmoid()
         )
 

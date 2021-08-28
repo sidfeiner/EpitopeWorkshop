@@ -63,7 +63,7 @@ def load_fasta_row_per_window(path: str, with_sliding_window: bool = True,
     seqs = []
     sub_seqs = []
     sub_sequence_index_start = []
-    is_in_epitope = []  # type: List[List[int]]
+    is_in_epitope = []  # type: List[int]
     with open(path) as handle:
         for idx, record in enumerate(SeqIO.parse(handle, "fasta")):
             current_sub_seqs = utils.split_to_subsequences(record.seq,
@@ -76,7 +76,7 @@ def load_fasta_row_per_window(path: str, with_sliding_window: bool = True,
             seqs.extend(mult_basic_values * [record.seq])
             sub_seqs.extend(current_sub_seqs)
             sub_sequence_index_start.extend(range(len(current_sub_seqs)))
-            is_in_epitope.extend(([int(aa.isupper()) for aa in sub_seq] for sub_seq in current_sub_seqs))
+            is_in_epitope.extend((int(sub_seq[len(sub_seq) // 2].isupper()) for sub_seq in current_sub_seqs))
             if len(record.features):
                 print(f"found features: {record.features}")
             if limit_sequences_amt is not None and limit_sequences_amt == idx:

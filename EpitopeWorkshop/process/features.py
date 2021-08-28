@@ -129,10 +129,10 @@ class FeatureCalculator:
 
             subseq_features.append(torch.FloatTensor(lst_features))
 
-        return torch.stack(subseq_features).unsqueeze(0) # Add channel dimension
+        return torch.stack(subseq_features).unsqueeze(0)  # Add channel dimension
 
     def calculate_features(self, ddf: dd.DataFrame) -> dd.DataFrame:
-        ddf[IS_IN_EPITOPE_COL_NAME] = ddf[IS_IN_EPITOPE_COL_NAME].apply(torch.LongTensor, meta=('O'))
-        calculated_features = ddf.apply(self.calculate_row_features, axis=1, meta=('O')).rename(CALCULATED_FEATURES_COL_NAME)
+        calculated_features = ddf.apply(self.calculate_row_features, axis=1, meta=('O')) \
+            .rename(CALCULATED_FEATURES_COL_NAME)
         ddf = dd.concat([ddf, calculated_features], axis=1)
         return ddf.compute()
