@@ -4,11 +4,7 @@ import fire
 import dask.dataframe as dd
 import pandas as pd
 
-<<<<<<< HEAD
-from EpitopeWorkshop.cnn.train import training_loop, train
-=======
 from EpitopeWorkshop.cnn.train import train_model
->>>>>>> 37493a51d79dc946cdb9aa6bca18ff9cc10b05a2
 from EpitopeWorkshop.common import contract
 from EpitopeWorkshop.dataset.EpitopeDataset import EpitopeDataset
 from EpitopeWorkshop.process import read
@@ -67,7 +63,7 @@ def main(sequences_file_path: str, partitions_amt: int = DEFAULT_PARTITIONS_AMT,
 
     cn = CNN()
     train_model(cn, dl_train=dl_train)
-    a, b, c, d = train(cn, dl_train=dl_train, dl_test=dl_test)
+    # a, b, c, d = train(cn, dl_train=dl_train, dl_test=dl_test)
 
 
 if __name__ == '__main__':

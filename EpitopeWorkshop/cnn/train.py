@@ -20,6 +20,10 @@ def train_model(model: 'CNN', dl_train: data.Dataset, epoch_amt: int = DEFAULT_E
             print(f"start with batch {i}")
             # get the inputs; data is a list of [inputs, labels]
             inputs, labels = data
+            print(inputs.size())
+            print(f"input is: {inputs}")
+            print(labels.size())
+            print(f"lables are: {labels}")
 
             # zero the parameter gradients
             model.optimizer.zero_grad()
@@ -27,7 +31,9 @@ def train_model(model: 'CNN', dl_train: data.Dataset, epoch_amt: int = DEFAULT_E
             # forward + backward + optimize
             outputs = model(inputs)
             print(outputs, labels)
-            loss = model.loss_func(outputs, labels)
+            print("##########################################")
+            print(outputs.size(), labels.size())
+            loss = model.loss_func(outputs, labels.data[-1])
             loss.backward()
             model.optimizer.step()
 
