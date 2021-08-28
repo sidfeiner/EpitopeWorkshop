@@ -33,9 +33,9 @@ def create_meta():
         HYDROPHOBICITY_COL_NAME: 'f8',
         COMPUTED_VOLUME_COL_NAME: 'f8',
         SS_ALPHA_HELIX_PROBA_COL_NAME: 'f8',
-        SS_BETA_SHEET_PROBACOL_NAME: 'f8',
+        SS_BETA_SHEET_PROBA_COL_NAME: 'f8',
         RSA_COL_NAME: 'f8',
-        IS_POLAR_PROBA_COL_NAME: 'f8'
+        POLARITY_PROBA_COL_NAME: 'f8'
     }
     for col in TYPE_COLUMNS.values():
         base_meta[col] = 'i'
@@ -119,9 +119,9 @@ class FeatureCalculator:
                 HYDROPHOBICITY_COL_NAME: self._calculate_hydrophobicity(aa),
                 COMPUTED_VOLUME_COL_NAME: self._calculate_computed_volume(aa),
                 SS_ALPHA_HELIX_PROBA_COL_NAME: alpha_proba,
-                SS_BETA_SHEET_PROBACOL_NAME: alpha_proba,
+                SS_BETA_SHEET_PROBA_COL_NAME: alpha_proba,
                 RSA_COL_NAME: self._calculate_relative_surface_accessibility(aa),
-                IS_POLAR_PROBA_COL_NAME: self._calculate_polarity(aa)
+                POLARITY_PROBA_COL_NAME: self._calculate_polarity(aa)
             }
 
             features.update(type_features)
@@ -133,6 +133,6 @@ class FeatureCalculator:
 
     def calculate_features(self, ddf: dd.DataFrame) -> dd.DataFrame:
         ddf[IS_IN_EPITOPE_COL_NAME] = ddf[IS_IN_EPITOPE_COL_NAME].apply(torch.LongTensor, meta=('O'))
-        calculated_features = ddf.apply(self.calculate_row_features, axis=1, meta=('O')).rename(CALCULATED_FEATURES)
+        calculated_features = ddf.apply(self.calculate_row_features, axis=1, meta=('O')).rename(CALCULATED_FEATURES_COL_NAME)
         ddf = dd.concat([ddf, calculated_features], axis=1)
         return ddf.compute()
