@@ -1,15 +1,15 @@
 from torch.utils import data
 from EpitopeWorkshop.common.contract import *
 from EpitopeWorkshop.common.conf import DEFAULT_EPOCHS
+from EpitopeWorkshop.cnn.cnn import CNN
 
 
-def training_loop(model: 'CNN', dl_train: data.Dataset, epoch_amt: int = DEFAULT_EPOCHS):
+def train_model(model: 'CNN', dl_train: data.Dataset, epoch_amt: int = DEFAULT_EPOCHS):
     for epoch in range(epoch_amt):  # loop over the dataset multiple times
         print(f"running for epoch {epoch + 1}")
         running_loss = 0.0
         for i, data in enumerate(dl_train):
-            print(i)
-            print(data)
+            print(f"start with batch {i}")
             # get the inputs; data is a list of [inputs, labels]
             inputs, labels = data
 

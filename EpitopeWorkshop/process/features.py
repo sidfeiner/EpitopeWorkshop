@@ -125,7 +125,7 @@ class FeatureCalculator:
             }
 
             features.update(type_features)
-            lst_features = [features[feature] for feature in FEATURES_ORDER]
+            lst_features = [features[feature] for feature in FEATURES_ORDERED]
 
             subseq_features.append(torch.FloatTensor(lst_features))
 
