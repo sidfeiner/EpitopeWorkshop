@@ -15,6 +15,7 @@ setup(
         'quantiprot',
         'fire',
         'memoization',
-        'dask'
+        'dask',
+        'pandas==1.3.0'
     ]
 )
