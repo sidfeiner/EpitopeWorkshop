@@ -133,5 +133,5 @@ class FeatureCalculator:
     def calculate_features(self, ddf: dd.DataFrame) -> dd.DataFrame:
         calculated_features = ddf.apply(self.calculate_row_features, axis=1, meta='O') \
             .rename(CALCULATED_FEATURES_COL_NAME)
-        ddf = dd.concat([ddf, calculated_features], axis=1)
+        ddf = dd.concat([ddf, calculated_features], axis=1).persist()
         return ddf.compute()

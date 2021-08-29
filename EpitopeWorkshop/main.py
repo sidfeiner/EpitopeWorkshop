@@ -1,3 +1,5 @@
+import logging
+import pickle
 from typing import Optional
 
 import fire
@@ -9,7 +11,7 @@ from EpitopeWorkshop.common import contract
 from EpitopeWorkshop.dataset.EpitopeDataset import EpitopeDataset
 from EpitopeWorkshop.process import read
 from EpitopeWorkshop.common.conf import *
-from EpitopeWorkshop.process.balance.balance import OverSamplingBalancer
+from EpitopeWorkshop.process.balance.balance import OverSamplingBalancer, UnderSamplingBalancer
 from EpitopeWorkshop.process.balance.transform import FeatureTransformer
 from EpitopeWorkshop.process.features import FeatureCalculator
 from EpitopeWorkshop.cnn.cnn import CNN
@@ -29,18 +31,38 @@ def main(sequences_file_path: str, partitions_amt: int = DEFAULT_PARTITIONS_AMT,
          oversampling_change_val_proba: float = DEFAULT_OVERSAMPLING_CHANGE_VAL_PROBA,
          oversampling_altercation_pct_min: int = DEFAULT_OVERSAMPLING_ALTERCATION_PCT_MIN,
          oversampling_altercation_pct_max: int = DEFAULT_OVERSAMPLING_ALTERCATION_PCT_MAX):
+    log_format = "%(asctime)s : %(threadName)s: %(levelname)s : %(name)s : %(module)s : %(message)s"
+    logging.basicConfig(format=log_format, level=logging.DEBUG)
+    logging.info("reading data")
     df = read.load_fasta_row_per_window(sequences_file_path, with_sliding_window, window_size, limit_sequences_amt)
+
+    # under_balancer = UnderSamplingBalancer(
+    #     contract.IS_IN_EPITOPE_COL_NAME,
+    #     balances={
+    #         0: 0.7,
+    #         1: 0.3
+    #     }
+    # )
+    # df = under_balancer.balance(df)
+    # print_balanced_data(df)
 
     ddf = dd.from_pandas(df, npartitions=partitions_amt)
     calculator = FeatureCalculator()
+
+    logging.info("calculating features")
     df = calculator.calculate_features(ddf)
+
+    logging.info("saving full file to pickle file")
+    df.to_pickle(
+        path='/Users/sfeiner/Documents/studies/biology/EpitopeWorkshop/data/features.csv',
+        protocol=pickle.HIGHEST_PROTOCOL
+    )
 
     feature_transformer = FeatureTransformer(
         oversampling_altercation_pct_min,
         oversampling_altercation_pct_max,
         oversampling_change_val_proba
     )
-
     balancer = OverSamplingBalancer(
         contract.IS_IN_EPITOPE_COL_NAME,
         [(contract.CALCULATED_FEATURES_COL_NAME, feature_transformer.transform)],
@@ -49,8 +71,19 @@ def main(sequences_file_path: str, partitions_amt: int = DEFAULT_PARTITIONS_AMT,
             1: 0.5
         }
     )
+
+    logging.info("balancing by over sampling")
+
     df = balancer.balance(df)
     print_balanced_data(df)
+
+    logging.info("saving balanced to pickle file")
+    df.to_pickle(
+        path='/Users/sfeiner/Documents/studies/biology/EpitopeWorkshop/data/features_balanced.csv',
+        protocol=pickle.HIGHEST_PROTOCOL
+    )
+    print("DONE!")
+    return
 
     calculated_features = df[contract.CALCULATED_FEATURES_COL_NAME]
     labels = df[contract.IS_IN_EPITOPE_COL_NAME]

@@ -14,22 +14,14 @@ def train_model(model: 'CNN', dl_train: data.Dataset, epoch_amt: int = DEFAULT_E
         print(f"running for epoch {epoch + 1}")
         running_loss = 0.0
         for i, data in enumerate(dl_train):
-            print(f"start with batch {i}")
             # get the inputs; data is a list of [inputs, labels]
             inputs, labels = data
-            print(inputs.size())
-            print(f"input is: {inputs}")
-            print(labels.size())
-            print(f"lables are: {labels}")
 
             # zero the parameter gradients
             model.optimizer.zero_grad()
 
             # forward + backward + optimize
             outputs = model(inputs)
-            print(outputs, labels)
-            print("##########################################")
-            print(outputs.shape, labels.shape)
             loss = model.loss_func(outputs, labels)
             loss.backward()
             model.optimizer.step()
