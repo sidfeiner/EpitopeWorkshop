@@ -1,5 +1,8 @@
+import glob
 import logging
+import os
 import pickle
+import shutil
 from typing import Optional
 
 import fire
@@ -25,15 +28,20 @@ def print_balanced_data(df: pd.DataFrame):
         print(f"{val}: {freq * 100}%")
 
 
-def main(sequences_file_path: str, partitions_amt: int = DEFAULT_PARTITIONS_AMT,
-         with_sliding_window: bool = DEFAULT_WITH_SLIDING_WINDOW,
-         window_size: int = DEFAULT_WINDOW_SIZE, limit_sequences_amt: Optional[int] = None,
-         oversampling_change_val_proba: float = DEFAULT_OVERSAMPLING_CHANGE_VAL_PROBA,
-         oversampling_altercation_pct_min: int = DEFAULT_OVERSAMPLING_ALTERCATION_PCT_MIN,
-         oversampling_altercation_pct_max: int = DEFAULT_OVERSAMPLING_ALTERCATION_PCT_MAX):
-    log_format = "%(asctime)s : %(threadName)s: %(levelname)s : %(name)s : %(module)s : %(message)s"
-    logging.basicConfig(format=log_format, level=logging.DEBUG)
-    logging.info("reading data")
+def process_file(sequences_file_path: str, partitions_amt: int = DEFAULT_PARTITIONS_AMT,
+                 with_sliding_window: bool = DEFAULT_WITH_SLIDING_WINDOW,
+                 window_size: int = DEFAULT_WINDOW_SIZE, limit_sequences_amt: Optional[int] = None,
+                 oversampling_change_val_proba: float = DEFAULT_OVERSAMPLING_CHANGE_VAL_PROBA,
+                 oversampling_altercation_pct_min: int = DEFAULT_OVERSAMPLING_ALTERCATION_PCT_MIN,
+                 oversampling_altercation_pct_max: int = DEFAULT_OVERSAMPLING_ALTERCATION_PCT_MAX):
+    logging.info(f"handling file {sequences_file_path}")
+    dir_path, basename = os.path.split(sequences_file_path)
+    name, ext = os.path.splitext(basename)
+    final_dir = os.path.join(dir_path, 'features')
+    done_dir = os.path.join(dir_path, 'handled')
+    os.makedirs(final_dir, exist_ok=True)
+    os.makedirs(done_dir, exist_ok=True)
+
     df = read.load_fasta_row_per_window(sequences_file_path, with_sliding_window, window_size, limit_sequences_amt)
 
     # under_balancer = UnderSamplingBalancer(
@@ -53,8 +61,9 @@ def main(sequences_file_path: str, partitions_amt: int = DEFAULT_PARTITIONS_AMT,
     df = calculator.calculate_features(ddf)
 
     logging.info("saving full file to pickle file")
+    raw_data_path = os.path.join(final_dir, f"{basename}_features{ext}")
     df.to_pickle(
-        path='/Users/sfeiner/Documents/studies/biology/EpitopeWorkshop/data/features.csv',
+        path=raw_data_path,
         protocol=pickle.HIGHEST_PROTOCOL
     )
 
@@ -78,10 +87,32 @@ def main(sequences_file_path: str, partitions_amt: int = DEFAULT_PARTITIONS_AMT,
     print_balanced_data(df)
 
     logging.info("saving balanced to pickle file")
+    raw_data_path = os.path.join(final_dir, f"{basename}_features_balanced{ext}")
     df.to_pickle(
-        path='/Users/sfeiner/Documents/studies/biology/EpitopeWorkshop/data/features_balanced.csv',
+        path=raw_data_path,
         protocol=pickle.HIGHEST_PROTOCOL
     )
+
+    shutil.move(sequences_file_path, done_dir)
+    logging.info(f"done handling {sequences_file_path}")
+
+
+def main(sequences_files_dir: str, partitions_amt: int = DEFAULT_PARTITIONS_AMT,
+         with_sliding_window: bool = DEFAULT_WITH_SLIDING_WINDOW,
+         window_size: int = DEFAULT_WINDOW_SIZE, limit_sequences_amt: Optional[int] = None,
+         oversampling_change_val_proba: float = DEFAULT_OVERSAMPLING_CHANGE_VAL_PROBA,
+         oversampling_altercation_pct_min: int = DEFAULT_OVERSAMPLING_ALTERCATION_PCT_MIN,
+         oversampling_altercation_pct_max: int = DEFAULT_OVERSAMPLING_ALTERCATION_PCT_MAX):
+    log_format = "%(asctime)s : %(threadName)s: %(levelname)s : %(name)s : %(module)s : %(message)s"
+    logging.basicConfig(format=log_format, level=logging.DEBUG)
+
+    files = glob.glob(os.path.join(sequences_files_dir, '*.fasta'))
+    for file in files:
+        process_file(
+            file, partitions_amt, with_sliding_window, window_size, limit_sequences_amt,
+            oversampling_change_val_proba, oversampling_altercation_pct_min, oversampling_altercation_pct_max
+        )
+
     print("DONE!")
     return
 
