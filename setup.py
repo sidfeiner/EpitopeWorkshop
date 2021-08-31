@@ -16,6 +16,6 @@ setup(
         'fire',
         'memoization',
         'dask',
-        'pandas==1.3.0'
+        'pandas'
     ]
 )

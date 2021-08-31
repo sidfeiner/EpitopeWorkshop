@@ -5,7 +5,7 @@ import fire
 
 
 class SplitIEDBEpitopes:
-    def run(self, path: str, files_amt: int = 10, target_dir: Optional[str] = None):
+    def run(self, path: str, files_amt: int = 100, target_dir: Optional[str] = None):
         target_dir = target_dir or os.path.join(os.path.dirname(path), 'iedb-epitopes-parts')
         base, ext = os.path.splitext(os.path.basename(path))
         lines_per_file = [[] for _ in range(files_amt)]

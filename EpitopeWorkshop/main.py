@@ -62,36 +62,36 @@ def process_file(sequences_file_path: str, partitions_amt: int = DEFAULT_PARTITI
 
     logging.info("saving full file to pickle file")
     raw_data_path = os.path.join(final_dir, f"{basename}_features{ext}")
-    df.to_pickle(
+    df[[contract.CALCULATED_FEATURES_COL_NAME, contract.IS_IN_EPITOPE_COL_NAME]].to_pickle(
         path=raw_data_path,
         protocol=pickle.HIGHEST_PROTOCOL
     )
 
-    feature_transformer = FeatureTransformer(
-        oversampling_altercation_pct_min,
-        oversampling_altercation_pct_max,
-        oversampling_change_val_proba
-    )
-    balancer = OverSamplingBalancer(
-        contract.IS_IN_EPITOPE_COL_NAME,
-        [(contract.CALCULATED_FEATURES_COL_NAME, feature_transformer.transform)],
-        balances={
-            0: 0.5,
-            1: 0.5
-        }
-    )
-
-    logging.info("balancing by over sampling")
-
-    df = balancer.balance(df)
-    print_balanced_data(df)
-
-    logging.info("saving balanced to pickle file")
-    raw_data_path = os.path.join(final_dir, f"{basename}_features_balanced{ext}")
-    df.to_pickle(
-        path=raw_data_path,
-        protocol=pickle.HIGHEST_PROTOCOL
-    )
+    # feature_transformer = FeatureTransformer(
+    #     oversampling_altercation_pct_min,
+    #     oversampling_altercation_pct_max,
+    #     oversampling_change_val_proba
+    # )
+    # balancer = OverSamplingBalancer(
+    #     contract.IS_IN_EPITOPE_COL_NAME,
+    #     [(contract.CALCULATED_FEATURES_COL_NAME, feature_transformer.transform)],
+    #     balances={
+    #         0: 0.5,
+    #         1: 0.5
+    #     }
+    # )
+    #
+    # logging.info("balancing by over sampling")
+    #
+    # df = balancer.balance(df)
+    # print_balanced_data(df)
+    #
+    # logging.info("saving balanced to pickle file")
+    # raw_data_path = os.path.join(final_dir, f"{basename}_features_balanced{ext}")
+    # df.to_pickle(
+    #     path=raw_data_path,
+    #     protocol=pickle.HIGHEST_PROTOCOL
+    # )
 
     shutil.move(sequences_file_path, done_dir)
     logging.info(f"done handling {sequences_file_path}")
