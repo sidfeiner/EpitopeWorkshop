@@ -2,14 +2,11 @@ import torch
 import time
 
 from torch.utils import data
-from EpitopeWorkshop.common.contract import *
 from EpitopeWorkshop.common.conf import DEFAULT_EPOCHS
 from EpitopeWorkshop.cnn.cnn import CNN
-import torch.optim as optim
 
 TEST_BATCH_SIZE = 20
 BATCH_SIZE = 4
-
 
 
 def train_model(model: 'CNN', dl_train: data.Dataset, epoch_amt: int = DEFAULT_EPOCHS):
@@ -17,23 +14,15 @@ def train_model(model: 'CNN', dl_train: data.Dataset, epoch_amt: int = DEFAULT_E
         print(f"running for epoch {epoch + 1}")
         running_loss = 0.0
         for i, data in enumerate(dl_train):
-            print(f"start with batch {i}")
             # get the inputs; data is a list of [inputs, labels]
             inputs, labels = data
-            print(inputs.size())
-            print(f"input is: {inputs}")
-            print(labels.size())
-            print(f"lables are: {labels}")
 
             # zero the parameter gradients
             model.optimizer.zero_grad()
 
             # forward + backward + optimize
             outputs = model(inputs)
-            print(outputs, labels)
-            print("##########################################")
-            print(outputs.size(), labels.size())
-            loss = model.loss_func(outputs, labels.data[-1])
+            loss = model.loss_func(outputs, labels)
             loss.backward()
             model.optimizer.step()
 
@@ -43,6 +32,7 @@ def train_model(model: 'CNN', dl_train: data.Dataset, epoch_amt: int = DEFAULT_E
                 print('[%d, %5d] loss: %.3f' %
                       (epoch + 1, i + 1, running_loss / 2000))
                 running_loss = 0.0
+
 
 def train(model: 'CNN', dl_train: data.Dataset, dl_test: data.Dataset, epoch_amt: int = DEFAULT_EPOCHS, max_batches=20):
     test_accuercies, test_losses = [], []

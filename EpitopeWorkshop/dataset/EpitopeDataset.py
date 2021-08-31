@@ -1,10 +1,7 @@
-from typing import Iterable, List
-
 import torch
 from torch.utils import data
 import pandas as pd
-import numpy as np
-from EpitopeWorkshop.common import utils, conf, contract
+from EpitopeWorkshop.common import utils
 from EpitopeWorkshop.common.conf import *
 
 
@@ -22,8 +19,7 @@ class EpitopeDataset(data.Dataset):
         self.labels = labels
 
     def _has_positive_vals(self, labels: pd.Series):
-        in_epitope = labels.apply(lambda x: x[len(x) // 2].item())
-        return len(in_epitope.where(in_epitope == 1)) > 0
+        return len(labels.where(labels == 1)) > 0
 
     def _splits(self):
         series_train, series_rest = utils.series_random_split([self.features, self.labels], DEFAULT_TRAIN_DATA_PCT)

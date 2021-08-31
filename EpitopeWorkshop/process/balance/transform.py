@@ -15,7 +15,8 @@ class FeatureTransformer:
     def _get_random_pct(self):
         return random.randint(self.min_pct, self.max_pct)
 
-    def _set_proba_val(self, row: np.ndarray, val_index: int, pct_change: int):
+    @staticmethod
+    def _set_proba_val(row: np.ndarray, val_index: int, pct_change: int):
         new_val = row[val_index] * (pct_change / 100)
         if new_val > 1:
             new_val = 1
@@ -24,16 +25,23 @@ class FeatureTransformer:
         row[val_index] = new_val
 
     def _transform_row(self, row: np.ndarray) -> np.ndarray:
-        positive_type_features = {type_col for type_col in contract.TYPE_COLUMNS.values() if
-                                  row[contract.FEATURES_TO_INDEX_MAPPING[type_col]]}
+        positive_type_features = [type_col for type_col in contract.TYPE_COLUMNS.values() if
+                                  row[contract.FEATURES_TO_INDEX_MAPPING[type_col]]]
 
-        # Add extra type
-        add_extra_positive_type = random.random() <= self.change_val_proba
-        if add_extra_positive_type:
-            potential_types = [type_col for type_col in contract.TYPE_COLUMNS.values() if
-                               type_col not in positive_type_features]
+        # Change some type
+        change_some_type = random.random() <= self.change_val_proba
+        if change_some_type:
+            if len(positive_type_features) > 1 and \
+                    (len(positive_type_features) == len(contract.TYPE_COLUMNS) or random.random() <= 0.5):
+                # Remove some type
+                potential_types = positive_type_features
+            else:
+                # Add some type
+                potential_types = [type_col for type_col in contract.TYPE_COLUMNS.values() if
+                                   type_col not in positive_type_features]
             random_potential_type = random.choice(potential_types)
-            row[contract.FEATURES_TO_INDEX_MAPPING[random_potential_type]] = 1
+            index = contract.FEATURES_TO_INDEX_MAPPING[random_potential_type]
+            row[index] = 1 - row[index]
 
         # Change Volume
         change_volume = random.random() <= self.change_val_proba

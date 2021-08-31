@@ -4,3 +4,4 @@ venv/
 venv
 /venv
 data/unknown-structures/frenemies/
+*pyc

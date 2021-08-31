@@ -1,8 +1,7 @@
 import functools
 import random
-from typing import Callable, Dict, Optional, Any, Set, List, Tuple
+from typing import Callable, Dict, Optional, Any, List, Tuple
 import pandas as pd
-import numpy as np
 
 
 class UnknownValueToBalance(Exception):
@@ -12,7 +11,12 @@ class UnknownValueToBalance(Exception):
 VAL_COL_NAME = 'val'
 MASK_COL_NAME = 'msk'
 
-SELF_FUNC = lambda x: x
+
+def self(x):
+    return x
+
+
+SELF_FUNC = self
 
 
 class UnderSamplingMasker:
@@ -25,7 +29,7 @@ class UnderSamplingMasker:
 
     @classmethod
     def update_balancer_mask(cls, mask_df: pd.DataFrame, balance_val: Any, handled_vals: List[Any],
-                             balances: Dict[Any, float], cur_final_series_size: int) -> Tuple[pd.DataFrame, int]:
+                             balances: Dict[Any, float], cur_final_series_size: int) -> int:
         """
         Inplace, updates the mask of the df
         Return final series size based on this value's rebalance

@@ -2,7 +2,6 @@ from typing import List
 
 import pandas as pd
 import torch
-from Bio.Seq import Seq
 from Bio.SeqUtils import ProtParamData
 from Bio.SeqUtils.ProtParam import ProteinAnalysis
 from memoization import cached
@@ -11,6 +10,7 @@ import dask.dataframe as dd
 from EpitopeWorkshop.common import vars, conf, utils
 from EpitopeWorkshop.common.contract import *
 from EpitopeWorkshop.process.ss_predictor import SecondaryStructurePredictor
+from dask.distributed import Client, progress
 
 GROUPED_AA = {
     'X': None,
@@ -129,10 +129,10 @@ class FeatureCalculator:
 
             subseq_features.append(torch.FloatTensor(lst_features))
 
-        return torch.stack(subseq_features).unsqueeze(0) # Add channel dimension
+        return torch.stack(subseq_features).unsqueeze(0)  # Add channel dimension
 
     def calculate_features(self, ddf: dd.DataFrame) -> dd.DataFrame:
-        ddf[IS_IN_EPITOPE_COL_NAME] = ddf[IS_IN_EPITOPE_COL_NAME].apply(torch.LongTensor, meta=('O'))
-        calculated_features = ddf.apply(self.calculate_row_features, axis=1, meta=('O')).rename(CALCULATED_FEATURES_COL_NAME)
-        ddf = dd.concat([ddf, calculated_features], axis=1)
+        calculated_features = ddf.apply(self.calculate_row_features, axis=1, meta='O') \
+            .rename(CALCULATED_FEATURES_COL_NAME)
+        ddf = dd.concat([ddf, calculated_features], axis=1).persist()
         return ddf.compute()
