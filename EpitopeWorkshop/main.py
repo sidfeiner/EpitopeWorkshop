@@ -47,11 +47,11 @@ class Epitopes:
 
         df = read.load_fasta_row_per_window(sequences_file_path, with_sliding_window, window_size, limit_sequences_amt)
 
-        ddf = dd.from_pandas(df, npartitions=partitions_amt)
+        # ddf = dd.from_pandas(df, npartitions=partitions_amt)
         calculator = FeatureCalculator()
 
         logging.info("calculating features")
-        df = calculator.calculate_features(ddf)
+        df = calculator.calculate_features(df)
 
         logging.info("saving full file to pickle file")
         raw_data_path = os.path.join(final_dir, f"{name}_features{ext}")
@@ -74,9 +74,7 @@ class Epitopes:
         files = [file for file in files if int(re.search(r'_(\d+)\.fasta', file).group(1)) % total_workers == worker_id]
         for file in files:
             self.process_file(
-                file, partitions_amt, with_sliding_window, window_size, limit_sequences_amt,
-                oversampling_change_val_proba, oversampling_altercation_pct_min, oversampling_altercation_pct_max
-            )
+                file, partitions_amt, with_sliding_window, window_size, limit_sequences_amt)
 
         print("DONE!")
         return
