@@ -1,3 +1,5 @@
+import logging
+
 import torch
 import time
 
@@ -5,8 +7,7 @@ from torch.utils import data
 from EpitopeWorkshop.common.conf import DEFAULT_EPOCHS
 from EpitopeWorkshop.cnn.cnn import CNN
 
-TEST_BATCH_SIZE = 20
-BATCH_SIZE = 4
+TEST_BATCH_SIZE = 1000
 
 
 def train_model(model: 'CNN', dl_train: data.Dataset, epoch_amt: int = DEFAULT_EPOCHS):
@@ -23,6 +24,7 @@ def train_model(model: 'CNN', dl_train: data.Dataset, epoch_amt: int = DEFAULT_E
             # forward + backward + optimize
             outputs = model(inputs)
             loss = model.loss_func(outputs, labels)
+            running_loss += loss
             loss.backward()
             model.optimizer.step()
 
@@ -34,11 +36,13 @@ def train_model(model: 'CNN', dl_train: data.Dataset, epoch_amt: int = DEFAULT_E
                 running_loss = 0.0
 
 
-def train(model: 'CNN', dl_train: data.Dataset, dl_test: data.Dataset, epoch_amt: int = DEFAULT_EPOCHS, max_batches=20):
-    test_accuercies, test_losses = [], []
+def train(model: 'CNN', batch_size: int, dl_train: data.Dataset, dl_test: data.Dataset, epoch_amt: int = DEFAULT_EPOCHS,
+          max_batches=20):
+    test_accuracies, test_losses = [], []
     train_accuracy, train_loss = [], []
 
-    for epoch_idx in range(DEFAULT_EPOCHS):
+    for epoch_idx in range(epoch_amt):
+        logging.info(f"running epoch {epoch_idx + 1}/{epoch_amt}")
         total_loss, n_correct = 0, 0
         start_timestamp = time.time()
 
@@ -50,7 +54,7 @@ def train(model: 'CNN', dl_train: data.Dataset, dl_test: data.Dataset, epoch_amt
 
             # Backward pass
             model.optimizer.zero_grad()
-            loss = model.criterion(y_pred_log_proba, y)
+            loss = model.loss_func(y_pred_log_proba, y)
             loss.backward()
 
             # Weight updates
@@ -61,20 +65,22 @@ def train(model: 'CNN', dl_train: data.Dataset, dl_test: data.Dataset, epoch_amt
             y_pred = torch.argmax(y_pred_log_proba, dim=1)
             n_correct += torch.sum(y_pred == y).float().item()
             if (total_batch_idx + 1) % TEST_BATCH_SIZE == 0:
+                logging.debug(f"comparing with all the test data at batch {total_batch_idx + 1}")
                 dl_test_iter = iter(dl_test)
                 test_total_acc, test_total_loss = 0, 0
                 for test_batch in dl_test_iter:
-                    test_X, test_y = test_batch.text, test_batch.label
+                    test_X, test_y = test_batch[0], test_batch[1]
                     test_pred_log_proba = model(test_X)
                     test_predication = torch.argmax(test_pred_log_proba, dim=1)
-                    loss = model.criterion(test_pred_log_proba, test_y)
+                    loss = model.loss_func(test_pred_log_proba, test_y)
                     test_total_loss += loss.item()
                     test_total_acc += torch.sum(test_predication == test_y).float().item()
-                test_accuercies.append(test_total_acc / (len(dl_test) * BATCH_SIZE))
+                test_accuracies.append(test_total_acc / (len(dl_test) * batch_size))
                 test_losses.append(test_total_loss / len(dl_test))
-                train_accuracy.append(n_correct / (TEST_BATCH_SIZE * BATCH_SIZE))
+                train_accuracy.append(n_correct / (TEST_BATCH_SIZE * batch_size))
                 train_loss.append(total_loss / TEST_BATCH_SIZE)
+                n_correct, total_loss = 0, 0
         print(
-            f"Epoch #{epoch_idx}, loss={total_loss / (max_batches):.3f}, accuracy={n_correct / (max_batches * BATCH_SIZE):.3f},elapsed={time.time() - start_timestamp:.1f} sec")
+            f"Epoch #{epoch_idx}, loss={total_loss / (max_batches):.3f}, accuracy={n_correct / (max_batches * batch_size):.3f},elapsed={time.time() - start_timestamp:.1f} sec")
 
-    return train_accuracy, train_loss, test_accuercies, test_losses
+    return train_accuracy, train_loss, test_accuracies, test_losses

@@ -1,26 +1,36 @@
+import pickle
+
 import torch.nn as nn
 import torch.optim as optim
 
 from EpitopeWorkshop.common import contract
 
 KERNEL_SIZE = 3
+IN_CHANNELS = 1
+LAYER_1_CHANNELS = 6
 OUT_CHANNELS = 10
+PADDING = 1
+CLASSIFICATION_OPTIONS_AMT = 2
 
 
 class CNN(nn.Module):
-    def __init__(self, in_channels=1):
+    def __init__(self):
         super().__init__()
         self.feature_extractor = nn.Sequential(
-            nn.Conv2d(in_channels, out_channels=6, kernel_size=KERNEL_SIZE, padding=1),
+            nn.Conv2d(
+                IN_CHANNELS, out_channels=LAYER_1_CHANNELS,
+                kernel_size=KERNEL_SIZE, padding=PADDING
+            ),
             nn.ReLU(),
-            nn.Conv2d(in_channels=6, out_channels=OUT_CHANNELS, kernel_size=KERNEL_SIZE, padding=1),
+            nn.Conv2d(
+                in_channels=LAYER_1_CHANNELS, out_channels=OUT_CHANNELS,
+                kernel_size=KERNEL_SIZE, padding=PADDING),
             nn.ReLU(),
-
         )
         self.classifier = nn.Sequential(
             nn.Linear(OUT_CHANNELS * KERNEL_SIZE * KERNEL_SIZE * len(contract.FEATURES_ORDERED), 120),
             nn.ReLU(),
-            nn.Linear(120, 2),
+            nn.Linear(120, CLASSIFICATION_OPTIONS_AMT),
             nn.Sigmoid()
         )
 
@@ -32,3 +42,13 @@ class CNN(nn.Module):
         features = features.view(features.size(0), -1)
         probability = self.classifier(features)
         return probability
+
+    def to_pickle_file(self, path: str):
+        with open(path, 'w') as fp:
+            pickle.dump(self, fp)
+
+    @classmethod
+    def from_pickle_file(cls, path: str) -> 'CNN':
+        with open(path, 'r') as fp:
+            cnn = pickle.load(fp)
+        return cnn
