@@ -7,7 +7,7 @@ from torch.utils import data
 from EpitopeWorkshop.common.conf import DEFAULT_EPOCHS
 from EpitopeWorkshop.cnn.cnn import CNN
 
-TEST_BATCH_SIZE = 1000
+TEST_BATCH_SIZE = 50
 
 
 def train_model(model: 'CNN', dl_train: data.Dataset, epoch_amt: int = DEFAULT_EPOCHS):
@@ -29,10 +29,11 @@ def train_model(model: 'CNN', dl_train: data.Dataset, epoch_amt: int = DEFAULT_E
             model.optimizer.step()
 
             # print statistics
-            # running_loss += loss.item()
             if i % 2000 == 1999:  # print every 2000 mini-batches
-                print('[%d, %5d] loss: %.3f' %
-                      (epoch + 1, i + 1, running_loss / 2000))
+                logging.debug(
+                    '[%d, %5d] loss: %.3f' %
+                    (epoch + 1, i + 1, running_loss / 2000)
+                )
                 running_loss = 0.0
 
 
@@ -80,7 +81,8 @@ def train(model: 'CNN', batch_size: int, dl_train: data.Dataset, dl_test: data.D
                 train_accuracy.append(n_correct / (TEST_BATCH_SIZE * batch_size))
                 train_loss.append(total_loss / TEST_BATCH_SIZE)
                 n_correct, total_loss = 0, 0
-        print(
-            f"Epoch #{epoch_idx}, loss={total_loss / (max_batches):.3f}, accuracy={n_correct / (max_batches * batch_size):.3f},elapsed={time.time() - start_timestamp:.1f} sec")
+        logging.debug(
+            f"Epoch #{epoch_idx}, loss={total_loss / (max_batches):.3f}, accuracy={n_correct / (max_batches * batch_size):.3f},elapsed={time.time() - start_timestamp:.1f} sec"
+        )
 
     return train_accuracy, train_loss, test_accuracies, test_losses

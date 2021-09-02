@@ -44,11 +44,11 @@ class CNN(nn.Module):
         return probability
 
     def to_pickle_file(self, path: str):
-        with open(path, 'w') as fp:
+        with open(path, 'wb') as fp:
             pickle.dump(self, fp)
 
     @classmethod
     def from_pickle_file(cls, path: str) -> 'CNN':
-        with open(path, 'r') as fp:
+        with open(path, 'rb') as fp:
             cnn = pickle.load(fp)
         return cnn

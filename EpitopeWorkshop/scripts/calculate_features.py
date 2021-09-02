@@ -2,11 +2,10 @@ import glob
 import logging
 import os
 import pickle
-import re
 import shutil
 from typing import Optional
 
-from EpitopeWorkshop.common import contract
+from EpitopeWorkshop.common import contract, utils
 from EpitopeWorkshop.common.conf import *
 from EpitopeWorkshop.process import read
 from EpitopeWorkshop.process.features import FeatureCalculator
@@ -48,7 +47,7 @@ class FileFeatureCalculator:
                                window_size: int = DEFAULT_WINDOW_SIZE, limit_sequences_amt: Optional[int] = None):
         logging.info(f"calculating features for fasta files in dir {sequences_files_dir}")
         files = glob.glob(os.path.join(sequences_files_dir, '*.fasta'))
-        files = [file for file in files if int(re.search(r'_(\d+)\.fasta', file).group(1)) % total_workers == worker_id]
+        files = [file for file in files if utils.parse_index_from_partial_data_file(file) % total_workers == worker_id]
         for file in files:
             self.calculate_features(
                 file, partitions_amt, with_sliding_window,
