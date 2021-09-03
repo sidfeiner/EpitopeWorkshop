@@ -10,7 +10,6 @@ import dask.dataframe as dd
 from EpitopeWorkshop.common import vars, conf, utils
 from EpitopeWorkshop.common.contract import *
 from EpitopeWorkshop.process.ss_predictor import SecondaryStructurePredictor
-from dask.distributed import Client, progress
 
 GROUPED_AA = {
     'X': None,
@@ -131,8 +130,8 @@ class FeatureCalculator:
 
         return torch.stack(subseq_features).unsqueeze(0)  # Add channel dimension
 
-    def calculate_features(self, ddf: dd.DataFrame) -> dd.DataFrame:
-        calculated_features = ddf.apply(self.calculate_row_features, axis=1, meta='O') \
+    def calculate_features(self, df: pd.DataFrame) -> pd.DataFrame:
+        calculated_features = df.apply(self.calculate_row_features, axis=1) \
             .rename(CALCULATED_FEATURES_COL_NAME)
-        ddf = dd.concat([ddf, calculated_features], axis=1).persist()
-        return ddf.compute()
+        df = pd.concat([df, calculated_features], axis=1)
+        return df

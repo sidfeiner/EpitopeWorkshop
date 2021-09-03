@@ -32,7 +32,8 @@ class SecondaryStructurePredictor:
         :param aa_index: index of current amino acid we wish to analyze
         :return: Tuple with average probability of being in an alpha-helix, and being in a beta-sheet
         """
-        subsequences = self._create_subsequence_generator(full_sequence, aa_index)
+        full_sequence_upper = full_sequence.upper()
+        subsequences = self._create_subsequence_generator(full_sequence_upper, aa_index)
         subsequences_cnt = 0
         alpha_helix_sum = beta_sheet_sum = 0
         amino_acid = str(full_sequence[aa_index])
