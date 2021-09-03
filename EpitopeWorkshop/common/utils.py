@@ -1,10 +1,13 @@
 import random
+import re
 from typing import List, Optional, Union
 
 import torch
 from Bio.Seq import Seq
 import pandas as pd
 import numpy as np
+
+PARTIAL_DATA_INDEX_PATTERN = re.compile(r'epitopes_(\d+)')
 
 
 def split_to_subsequences(sequence: Union[str, Seq], size: int, start_index: int = 0,
@@ -38,3 +41,8 @@ def tensor_random_split(tensor: torch.Tensor, split_pct: float) -> (torch.Tensor
         else:
             tensor2.append(item)
     return torch.FloatTensor(tensor1), torch.FloatTensor(tensor2)
+
+
+def parse_index_from_partial_data_file(path: str) -> int:
+    match = PARTIAL_DATA_INDEX_PATTERN.search(path)
+    return int(match.group(1))
