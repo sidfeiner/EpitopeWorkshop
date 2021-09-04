@@ -20,6 +20,9 @@ def print_balanced_data(df: pd.DataFrame):
 
 
 class OverBalancer:
+    """
+    Over balances data and removes duplicates
+    """
     def over_balance_file(self, features_df_pickle_path: str,
                           oversampling_change_val_proba: float = DEFAULT_OVERSAMPLING_CHANGE_VAL_PROBA,
                           oversampling_altercation_pct_min: int = DEFAULT_OVERSAMPLING_ALTERCATION_PCT_MIN,
