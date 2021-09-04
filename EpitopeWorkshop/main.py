@@ -78,7 +78,7 @@ class Epitopes(OverBalancer, FileFeatureCalculator, DFToCSV, SplitData):
             cnn.to_pth(persist_cnn_path)
 
     def test_trained_model(self, pth_path: str, test_files_dir: str, batch_size: int = DEFAULT_BATCH_SIZE,
-                           pos_weight: Optional[float] = None):
+                           threshold: float = DEFAULT_IN_EPITOPE_THRESHOLD, pos_weight: Optional[float] = None):
         total_records = 0
         total_success = 0
         test_files = glob.glob(os.path.join(test_files_dir, '*'))
@@ -92,8 +92,8 @@ class Epitopes(OverBalancer, FileFeatureCalculator, DFToCSV, SplitData):
             dl_test_iter = iter(dl_test)
             for test_batch in dl_test_iter:
                 test_X, test_y = test_batch[0], test_batch[1]
-                test_pred_log_proba = cnn(test_X)
-                test_predication = torch.argmax(test_pred_log_proba, dim=1)
+                test_pred_proba = torch.sigmoid(cnn(test_X))
+                test_predication = (test_pred_proba >= threshold).int().squeeze()
                 file_success += torch.sum(test_predication == test_y).float().item()
                 file_records += len(test_X)
             logging.info(
