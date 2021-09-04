@@ -12,7 +12,7 @@ TEST_BATCH_SIZE = 50
 
 def train_model(model: 'CNN', dl_train: data.Dataset, epoch_amt: int = DEFAULT_EPOCHS):
     for epoch in range(epoch_amt):  # loop over the dataset multiple times
-        print(f"running for epoch {epoch + 1}")
+        logging.info(f"running for epoch {epoch + 1}")
         running_loss = 0.0
         for i, data in enumerate(dl_train):
             # get the inputs; data is a list of [inputs, labels]
@@ -23,7 +23,7 @@ def train_model(model: 'CNN', dl_train: data.Dataset, epoch_amt: int = DEFAULT_E
 
             # forward + backward + optimize
             outputs = model(inputs)
-            loss = model.loss_func(outputs, labels)
+            loss = model.loss_func(outputs, labels.unsqueeze(1).float())
             running_loss += loss
             loss.backward()
             model.optimizer.step()

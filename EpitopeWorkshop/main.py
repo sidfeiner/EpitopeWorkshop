@@ -17,6 +17,7 @@ from EpitopeWorkshop.cnn.cnn import CNN
 from EpitopeWorkshop.scripts.calculate_features import FileFeatureCalculator
 from EpitopeWorkshop.scripts.over_balance import OverBalancer
 from EpitopeWorkshop.scripts.df_to_csv import DFToCSV
+from EpitopeWorkshop.scripts.split_data import SplitData
 
 log_format = "%(asctime)s : %(threadName)s: %(levelname)s : %(name)s : %(module)s : %(message)s"
 logging.basicConfig(format=log_format, level=logging.DEBUG)
@@ -38,12 +39,12 @@ def load_df_as_dl(path: str, batch_size: int):
         df_train[contract.IS_IN_EPITOPE_COL_NAME]
     )
     return torch.utils.data.DataLoader(ds_train, batch_size=batch_size,
-                                       shuffle=True, num_workers=2)
+                                       shuffle=True, num_workers=0)
 
 
-class Epitopes(OverBalancer, FileFeatureCalculator, DFToCSV):
+class Epitopes(OverBalancer, FileFeatureCalculator, DFToCSV, SplitData):
 
-    def test(self, balanced_data_dir: str):
+    def test(self, balanced_data_dir: str, pos_weight: Optional[float] = None):
         files = glob.glob(os.path.join(balanced_data_dir, '*balanced*.fasta'))
         for file in files:
             logging.info(f"testing file {file}")
@@ -53,16 +54,17 @@ class Epitopes(OverBalancer, FileFeatureCalculator, DFToCSV):
             logging.info("splitting to train, valid, test")
             dl_train, dl_valid, dl_test = ds.iters(batch_size=DEFAULT_BATCH_SIZE)
 
-            cnn = CNN()
+            cnn = CNN(pos_weight)
             logging.info("learning")
             train_accuracy, train_loss, test_accuracies, test_losses = train(cnn, DEFAULT_BATCH_SIZE, dl_train, dl_test)
             plot.plot_training_data(test_accuracies, test_losses, train_accuracy, train_loss)
 
     def train(self, train_files_dir: str, validation_files_dir: str, test_files_dir: str, epochs: int = DEFAULT_EPOCHS,
-              persist_cnn_path: Optional[str] = None, batch_size: int = DEFAULT_BATCH_SIZE):
-        cnn = CNN()
+              persist_cnn_path: Optional[str] = None, batch_size: int = DEFAULT_BATCH_SIZE,
+              pos_weight: Optional[float] = None):
+        cnn = CNN(pos_weight)
 
-        train_files = glob.glob(os.path.join(train_files_dir, '*.df'))
+        train_files = glob.glob(os.path.join(train_files_dir, '*.df'))[:1]
         for epoch in range(epochs):
             logging.info(f"running on all train data, epoch {epoch}")
             random.shuffle(train_files)
@@ -73,14 +75,15 @@ class Epitopes(OverBalancer, FileFeatureCalculator, DFToCSV):
         logging.info("done training cnn")
         if persist_cnn_path is not None:
             logging.info(f"persisting cnn to disk to {persist_cnn_path}")
-            cnn.to_pickle_file(persist_cnn_path)
+            cnn.to_pth(persist_cnn_path)
 
-    def test_trained_model(self, cnn_path: str, test_files_dir: str, batch_size: int = DEFAULT_BATCH_SIZE):
+    def test_trained_model(self, pth_path: str, test_files_dir: str, batch_size: int = DEFAULT_BATCH_SIZE,
+                           pos_weight: Optional[float] = None):
         total_records = 0
         total_success = 0
-        test_files = glob.glob(os.path.join(test_files_dir, '*.df'))
+        test_files = glob.glob(os.path.join(test_files_dir, '*'))
 
-        cnn = CNN.from_pickle_file(cnn_path)
+        cnn = CNN.from_pth(pth_path, pos_weight)
         for file in test_files:
             file_records = 0
             file_success = 0
