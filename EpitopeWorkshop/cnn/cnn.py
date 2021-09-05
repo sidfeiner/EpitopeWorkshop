@@ -15,7 +15,7 @@ CLASSIFICATION_OPTIONS_AMT = 1
 
 
 class CNN(nn.Module):
-    def __init__(self, pos_weight: Optional[float] = None):
+    def __init__(self):
         super().__init__()
         self.feature_extractor = nn.Sequential(
             nn.Conv2d(
@@ -34,11 +34,6 @@ class CNN(nn.Module):
             nn.Linear(120, CLASSIFICATION_OPTIONS_AMT),
         )
 
-        self.loss_func = nn.BCEWithLogitsLoss(
-            pos_weight=torch.tensor(pos_weight)
-        ) if pos_weight is not None else nn.BCEWithLogitsLoss()
-        self.optimizer = optim.SGD(self.parameters(), lr=0.001, momentum=0.9)
-
     def forward(self, x):
         features = self.feature_extractor(x)
         features = features.view(features.size(0), -1)
@@ -49,7 +44,7 @@ class CNN(nn.Module):
         torch.save(self.state_dict(), path)
 
     @classmethod
-    def from_pth(cls, path: str, pos_weight: Optional[float] = None) -> 'CNN':
-        cnn = cls(pos_weight)
+    def from_pth(cls, path: str) -> 'CNN':
+        cnn = cls()
         cnn.load_state_dict(torch.load(path))
         return cnn
