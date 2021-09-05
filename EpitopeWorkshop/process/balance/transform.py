@@ -59,7 +59,7 @@ class FeatureTransformer:
         change_rsa = random.random() <= self.change_val_proba
         if change_rsa:
             pct_change = self._get_random_pct()
-            row[contract.FEATURES_TO_INDEX_MAPPING[contract.RSA_COL_NAME]] *= (pct_change / 100)
+            row[contract.FEATURES_TO_INDEX_MAPPING[contract.SA_COL_NAME]] *= (pct_change / 100)
 
         # Change Secondary Structure Alpha Helix probability
         change_ss_alpha = random.random() <= self.change_val_proba
