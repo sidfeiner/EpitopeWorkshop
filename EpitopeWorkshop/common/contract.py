@@ -12,7 +12,7 @@ CALCULATED_FEATURES_COL_NAME = 'features'
 ANALYZED_SEQ_COL_NAME = 'analyzed_sequence'
 COMPUTED_VOLUME_COL_NAME = 'computed_volume'
 HYDROPHOBICITY_COL_NAME = 'hydrophobicity'
-RSA_COL_NAME = 'rsa'
+SA_COL_NAME = 'rsa'
 SS_ALPHA_HELIX_PROBA_COL_NAME = 'secondary_structure_alpha_helix_proba'
 SS_BETA_SHEET_PROBA_COL_NAME = 'secondary_structure_beta_sheet_proba'
 POLARITY_PROBA_COL_NAME = "is_polar_proba"
@@ -65,7 +65,7 @@ TYPE_COLUMNS = {
 FEATURES_ORDERED = [
     COMPUTED_VOLUME_COL_NAME,
     HYDROPHOBICITY_COL_NAME,
-    RSA_COL_NAME,
+    SA_COL_NAME,
     SS_ALPHA_HELIX_PROBA_COL_NAME,
     SS_BETA_SHEET_PROBA_COL_NAME,
     POLARITY_PROBA_COL_NAME,

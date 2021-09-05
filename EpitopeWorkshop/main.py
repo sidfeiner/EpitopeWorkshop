@@ -9,14 +9,12 @@ import fire
 import pandas as pd
 import torch
 
-from EpitopeWorkshop.cnn.train import train_model, train
+from EpitopeWorkshop.cnn.train import ModelTrainer
 from EpitopeWorkshop.common import contract, plot
 from EpitopeWorkshop.dataset.EpitopeDataset import EpitopeDataset
 from EpitopeWorkshop.common.conf import *
 from EpitopeWorkshop.cnn.cnn import CNN
-from EpitopeWorkshop.scripts.calculate_features import FileFeatureCalculator
-from EpitopeWorkshop.scripts.over_balance import OverBalancer
-from EpitopeWorkshop.scripts.df_to_csv import DFToCSV
+from EpitopeWorkshop.scripts.full_flow import CalculateBalance
 from EpitopeWorkshop.scripts.split_data import SplitData
 
 log_format = "%(asctime)s : %(threadName)s: %(levelname)s : %(name)s : %(module)s : %(message)s"
@@ -33,7 +31,7 @@ def load_dataset(df_path: str) -> EpitopeDataset:
 
 def load_df_as_dl(path: str, batch_size: int):
     with open(path, 'rb') as fp:
-        df_train = pickle.load(fp)
+        df_train = pickle.load(fp)  # type: pd.DataFrame
     ds_train = EpitopeDataset(
         df_train[contract.CALCULATED_FEATURES_COL_NAME],
         df_train[contract.IS_IN_EPITOPE_COL_NAME]
@@ -42,7 +40,7 @@ def load_df_as_dl(path: str, batch_size: int):
                                        shuffle=True, num_workers=0)
 
 
-class Epitopes(OverBalancer, FileFeatureCalculator, DFToCSV, SplitData):
+class Epitopes(CalculateBalance, SplitData):
 
     def test(self, balanced_data_dir: str, pos_weight: Optional[float] = None):
         files = glob.glob(os.path.join(balanced_data_dir, '*balanced*.fasta'))
@@ -54,15 +52,18 @@ class Epitopes(OverBalancer, FileFeatureCalculator, DFToCSV, SplitData):
             logging.info("splitting to train, valid, test")
             dl_train, dl_valid, dl_test = ds.iters(batch_size=DEFAULT_BATCH_SIZE)
 
-            cnn = CNN(pos_weight)
+            cnn = CNN()
             logging.info("learning")
-            train_accuracy, train_loss, test_accuracies, test_losses = train(cnn, DEFAULT_BATCH_SIZE, dl_train, dl_test)
+            trainer = ModelTrainer(cnn, pos_weight)
+            train_accuracy, train_loss, test_accuracies, test_losses = trainer.train(
+                DEFAULT_BATCH_SIZE, dl_train, dl_test
+            )
             plot.plot_training_data(test_accuracies, test_losses, train_accuracy, train_loss)
 
     def train(self, train_files_dir: str, validation_files_dir: str, test_files_dir: str, epochs: int = DEFAULT_EPOCHS,
               persist_cnn_path: Optional[str] = None, batch_size: int = DEFAULT_BATCH_SIZE,
               pos_weight: Optional[float] = None):
-        cnn = CNN(pos_weight)
+        cnn = CNN()
 
         train_files = glob.glob(os.path.join(train_files_dir, '*.df'))[:1]
         for epoch in range(epochs):
@@ -71,7 +72,8 @@ class Epitopes(OverBalancer, FileFeatureCalculator, DFToCSV, SplitData):
             for file in train_files:
                 logging.info(f"training file {file}")
                 dl_train = load_df_as_dl(file, batch_size)
-                train_model(cnn, dl_train, epoch_amt=1)
+                trainer = ModelTrainer(cnn, pos_weight)
+                trainer.train_model(dl_train, epoch_amt=1)
         logging.info("done training cnn")
         if persist_cnn_path is not None:
             logging.info(f"persisting cnn to disk to {persist_cnn_path}")
@@ -83,10 +85,11 @@ class Epitopes(OverBalancer, FileFeatureCalculator, DFToCSV, SplitData):
         total_success = 0
         test_files = glob.glob(os.path.join(test_files_dir, '*'))
 
-        cnn = CNN.from_pth(pth_path, pos_weight)
+        cnn = CNN.from_pth(pth_path)
         for file in test_files:
             file_records = 0
             file_success = 0
+            file_success_positive = 0
             logging.info(f"testing file {file}")
             dl_test = load_df_as_dl(file, batch_size)
             dl_test_iter = iter(dl_test)
@@ -95,6 +98,7 @@ class Epitopes(OverBalancer, FileFeatureCalculator, DFToCSV, SplitData):
                 test_pred_proba = torch.sigmoid(cnn(test_X))
                 test_predication = (test_pred_proba >= threshold).int().squeeze()
                 file_success += torch.sum(test_predication == test_y).float().item()
+                file_success_positive += 0
                 file_records += len(test_X)
             logging.info(
                 f"file records: {file_records}, success: {file_success}. Succes rate: {file_success / file_records}")

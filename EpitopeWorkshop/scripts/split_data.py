@@ -44,12 +44,12 @@ class SplitData:
         df.to_pickle(path)
         return df
 
-    def split_data(self, balanced_files_dir: str, max_records_per_df: int = 50000):
+    def split_data(self, balanced_files_dir: str, max_records_per_df: int = 5000):
         files = glob.glob(os.path.join(balanced_files_dir, '*.fasta'))
         train_files = [[] for _ in range(10)]  # type: List[List[torch.FloatTensor, int]]
         validation_files = [[] for _ in range(10)]  # type: List[List[torch.FloatTensor, int]]
-        test_files = [[] for _ in range(10)]  # type: List[List[torch.FloatTensor, int]]
-        hashes = {}  # type: Dict[Tuple[int, int], List[List[torch.FloatTensor, int]]]  # Map a hash to it's destination kind
+        test_files = [[] for _ in range(50)]  # type: List[List[torch.FloatTensor, int]]
+        hashes = {}  # type: Dict[Tuple[str, str], List[List[torch.FloatTensor, int]]]  # Map a hash to it's destination kind
 
         train_files_dir = os.path.join(balanced_files_dir, 'train-files')
         validation_files_dir = os.path.join(balanced_files_dir, 'validation-files')
@@ -86,9 +86,7 @@ class SplitData:
         def write_to_file(row: pd.Series, stats: FileStats):
             try:
                 _tensor = row[contract.CALCULATED_FEATURES_COL_NAME]  # type: torch.FloatTensor
-                tensor_hash = str(_tensor).__hash__()
-                _label = row[contract.IS_IN_EPITOPE_COL_NAME]
-                hash_key = (tensor_hash, _label)
+                hash_key = (row[contract.ID_COL_NAME], row[contract.SUB_SEQ_COL_NAME])
                 if hash_key not in hashes:
                     rnd = random.random()
                     if 0 < rnd < 0.2:
