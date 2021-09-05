@@ -1,21 +1,28 @@
 import random
 import re
-from typing import List, Optional, Union
+from typing import List, Union
 
 import torch
 from Bio.Seq import Seq
 import pandas as pd
 import numpy as np
 
+from EpitopeWorkshop.common import conf
+
 PARTIAL_DATA_INDEX_PATTERN = re.compile(r'epitopes_(\d+)')
 
 
-def split_to_subsequences(sequence: Union[str, Seq], size: int, start_index: int = 0,
-                          end_index: Optional[int] = None) -> List[Seq]:
-    end_index = end_index or len(sequence) - size + 1
+def split_to_subsequences(sequence: Union[str, Seq], size: int, empty_char: str=conf.NO_AMINO_ACID_CHAR) -> List[Seq]:
     sub_seqs = []
-    for current_start_index in range(start_index, end_index):
+    for i in range(size - 1, 0, -1):
+        subseq = empty_char * i + sequence[:size - i]
+        sub_seqs.append(subseq)
+    end_index = len(sequence) - size + 1
+    for current_start_index in range(end_index):
         sub_seqs.append(sequence[current_start_index:current_start_index + size])
+    for i in range(size-1):
+        subseq = sequence[-size +1+ i:] + empty_char * (i+1)
+        sub_seqs.append(subseq)
     return sub_seqs
 
 
