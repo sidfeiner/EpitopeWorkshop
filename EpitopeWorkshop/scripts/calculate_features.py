@@ -33,13 +33,14 @@ class FileFeatureCalculator:
 
         logging.info("saving full file to pickle file")
         raw_data_path = os.path.join(final_dir, f"{name}_features{ext}")
-        df[[contract.CALCULATED_FEATURES_COL_NAME, contract.IS_IN_EPITOPE_COL_NAME]].to_pickle(
+        df[[contract.ID_COL_NAME, contract.SUB_SEQ_COL_NAME, contract.CALCULATED_FEATURES_COL_NAME, contract.IS_IN_EPITOPE_COL_NAME]].to_pickle(
             path=raw_data_path,
             protocol=pickle.HIGHEST_PROTOCOL
         )
 
         shutil.move(sequences_file_path, done_dir)
         logging.info(f"done handling {sequences_file_path}")
+        return df
 
     def calculate_features_dir(self, sequences_files_dir: str, total_workers: int, worker_id: int,
                                partitions_amt: int = DEFAULT_PARTITIONS_AMT,
@@ -49,7 +50,7 @@ class FileFeatureCalculator:
         files = glob.glob(os.path.join(sequences_files_dir, '*.fasta'))
         files = [file for file in files if utils.parse_index_from_partial_data_file(file) % total_workers == worker_id]
         for file in files:
-            self.calculate_features(
+            yield file, self.calculate_features(
                 file, partitions_amt, with_sliding_window,
                 window_size, limit_sequences_amt
             )

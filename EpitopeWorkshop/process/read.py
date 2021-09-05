@@ -3,7 +3,7 @@ from typing import List, Optional, Set
 from Bio import SeqIO
 import pandas as pd
 
-from EpitopeWorkshop.common import utils
+from EpitopeWorkshop.common import utils, conf
 from EpitopeWorkshop.common.contract import *
 from EpitopeWorkshop.common.conf import DEFAULT_WINDOW_SIZE
 
@@ -28,9 +28,11 @@ def load_fasta_row_per_aa(path: str, with_sliding_window: bool = True,
     is_in_epitope = []
     with open(path) as handle:
         for idx, record in enumerate(SeqIO.parse(handle, "fasta")):
-            current_sub_seqs = utils.split_to_subsequences(record.seq,
-                                                           sliding_window_size) if with_sliding_window else [
-                record.seq]
+            current_sub_seqs = utils.split_to_subsequences(
+                record.seq,
+                sliding_window_size,
+                conf.NO_AMINO_ACID_CHAR
+            ) if with_sliding_window else [record.seq]
             if with_sliding_window:
                 assert len(current_sub_seqs) == (len(record.seq) - sliding_window_size + 1)
             mult_basic_values = len(current_sub_seqs) * sliding_window_size if with_sliding_window else len(record.seq)
@@ -66,17 +68,28 @@ def load_fasta_row_per_window(path: str, with_sliding_window: bool = True,
     is_in_epitope = []  # type: List[int]
     with open(path) as handle:
         for idx, record in enumerate(SeqIO.parse(handle, "fasta")):
-            current_sub_seqs = utils.split_to_subsequences(record.seq,
-                                                           sliding_window_size) if with_sliding_window else [
-                record.seq]
+            current_sub_seqs = utils.split_to_subsequences(
+                record.seq,
+                sliding_window_size,
+                conf.NO_AMINO_ACID_CHAR
+            ) if with_sliding_window else [record.seq]
             if with_sliding_window:
-                assert len(current_sub_seqs) == (len(record.seq) - sliding_window_size + 1)
+                assert len(current_sub_seqs) == (
+                        len(record.seq) - sliding_window_size + 1 + 2 * (sliding_window_size - 1))
             mult_basic_values = len(current_sub_seqs) if with_sliding_window else len(record.seq)
             ids.extend(mult_basic_values * [record.id])
             seqs.extend(mult_basic_values * [record.seq])
             sub_seqs.extend(current_sub_seqs)
-            sub_sequence_index_start.extend(range(len(current_sub_seqs)))
-            is_in_epitope.extend((int(sub_seq[len(sub_seq) // 2].isupper()) for sub_seq in current_sub_seqs))
+            if with_sliding_window:
+                sub_sequence_index_start.extend(range(-sliding_window_size +1, 0))
+            starting_indexes = range(len(record.seq)) if with_sliding_window else range(len(current_sub_seqs))
+            sub_sequence_index_start.extend(starting_indexes)
+            is_in_epitope.extend(
+                (
+                    0 if sub_seq[len(sub_seq) // 2] == conf.NO_AMINO_ACID_CHAR
+                    else int(sub_seq[len(sub_seq) // 2].isupper()) for sub_seq in current_sub_seqs
+                )
+            )
             if len(record.features):
                 print(f"found features: {record.features}")
             if limit_sequences_amt is not None and limit_sequences_amt == idx:

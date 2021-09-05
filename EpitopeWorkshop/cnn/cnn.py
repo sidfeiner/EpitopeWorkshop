@@ -1,5 +1,6 @@
-import pickle
+from typing import Optional
 
+import torch
 import torch.nn as nn
 import torch.optim as optim
 
@@ -10,7 +11,7 @@ IN_CHANNELS = 1
 LAYER_1_CHANNELS = 6
 OUT_CHANNELS = 10
 PADDING = 1
-CLASSIFICATION_OPTIONS_AMT = 2
+CLASSIFICATION_OPTIONS_AMT = 1
 
 
 class CNN(nn.Module):
@@ -31,11 +32,7 @@ class CNN(nn.Module):
             nn.Linear(OUT_CHANNELS * KERNEL_SIZE * KERNEL_SIZE * len(contract.FEATURES_ORDERED), 120),
             nn.ReLU(),
             nn.Linear(120, CLASSIFICATION_OPTIONS_AMT),
-            nn.Sigmoid()
         )
-
-        self.loss_func = nn.CrossEntropyLoss()
-        self.optimizer = optim.SGD(self.parameters(), lr=0.001, momentum=0.9)
 
     def forward(self, x):
         features = self.feature_extractor(x)
@@ -43,12 +40,11 @@ class CNN(nn.Module):
         probability = self.classifier(features)
         return probability
 
-    def to_pickle_file(self, path: str):
-        with open(path, 'wb') as fp:
-            pickle.dump(self, fp)
+    def to_pth(self, path: str):
+        torch.save(self.state_dict(), path)
 
     @classmethod
-    def from_pickle_file(cls, path: str) -> 'CNN':
-        with open(path, 'rb') as fp:
-            cnn = pickle.load(fp)
+    def from_pth(cls, path: str) -> 'CNN':
+        cnn = cls()
+        cnn.load_state_dict(torch.load(path))
         return cnn

@@ -20,14 +20,14 @@ def print_balanced_data(df: pd.DataFrame):
 
 
 class OverBalancer:
-    def over_balance_file(self, features_df_pickle_path: str,
-                          oversampling_change_val_proba: float = DEFAULT_OVERSAMPLING_CHANGE_VAL_PROBA,
-                          oversampling_altercation_pct_min: int = DEFAULT_OVERSAMPLING_ALTERCATION_PCT_MIN,
-                          oversampling_altercation_pct_max: int = DEFAULT_OVERSAMPLING_ALTERCATION_PCT_MAX):
-        logging.info(f"oversampling file {features_df_pickle_path}")
-        dir_path, basename = os.path.split(features_df_pickle_path)
-        name, ext = os.path.splitext(basename)
+    """
+    Over balances data and removes duplicates
+    """
 
+    def over_balance_df(self, df: pd.DataFrame, final_path: str,
+                        oversampling_change_val_proba: float = DEFAULT_OVERSAMPLING_CHANGE_VAL_PROBA,
+                        oversampling_altercation_pct_min: int = DEFAULT_OVERSAMPLING_ALTERCATION_PCT_MIN,
+                        oversampling_altercation_pct_max: int = DEFAULT_OVERSAMPLING_ALTERCATION_PCT_MAX):
         feature_transformer = FeatureTransformer(
             oversampling_altercation_pct_min,
             oversampling_altercation_pct_max,
@@ -42,18 +42,31 @@ class OverBalancer:
             }
         )
 
-        logging.info("loading df")
-        df = pd.read_pickle(features_df_pickle_path)
         logging.info("balancing data")
         df = balancer.balance(df)
         logging.info("done balancing data")
         print_balanced_data(df)
 
         logging.info("saving balanced to pickle file")
-        raw_data_path = os.path.join(dir_path, f"{name}_balanced{ext}")
         df.to_pickle(
-            path=raw_data_path,
+            path=final_path,
             protocol=pickle.HIGHEST_PROTOCOL
+        )
+        return df
+
+    def over_balance_file(self, features_df_pickle_path: str,
+                          oversampling_change_val_proba: float = DEFAULT_OVERSAMPLING_CHANGE_VAL_PROBA,
+                          oversampling_altercation_pct_min: int = DEFAULT_OVERSAMPLING_ALTERCATION_PCT_MIN,
+                          oversampling_altercation_pct_max: int = DEFAULT_OVERSAMPLING_ALTERCATION_PCT_MAX):
+        logging.info(f"oversampling file {features_df_pickle_path}")
+        dir_path, basename = os.path.split(features_df_pickle_path)
+        name, ext = os.path.splitext(basename)
+        logging.info("loading df")
+        df = pd.read_pickle(features_df_pickle_path)
+        self.over_balance_df(
+            df, os.path.join(dir_path, 'balanced', f"{name}_balanced{ext}"),
+            oversampling_change_val_proba, oversampling_altercation_pct_min,
+            oversampling_altercation_pct_max
         )
 
     def over_balance_dir(self, features_df_pickle_path_dir: str, total_workers: int = 1, worker_id: int = 0,
