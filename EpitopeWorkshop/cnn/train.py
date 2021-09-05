@@ -1,5 +1,4 @@
 import logging
-
 import torch
 import time
 
@@ -20,7 +19,6 @@ def train_model(model: 'CNN', dl_train: data.Dataset, epoch_amt: int = DEFAULT_E
 
             # zero the parameter gradients
             model.optimizer.zero_grad()
-
             # forward + backward + optimize
             outputs = model(inputs)
             loss = model.loss_func(outputs, labels)

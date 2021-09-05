@@ -43,32 +43,14 @@ def plot_graph(test_accs, test_losses, train_accs, train_losses):
 
 class Epitopes(OverBalancer, FileFeatureCalculator):
 
-    with open('C:\\Users\\User\\Downloads\\balanced.csv', 'rb')as file:
-        logging.info(f"testing file {file}")
-        logging.info("reading file")
-        df = pd.read_csv(file)
-        calculated_features = df[contract.CALCULATED_FEATURES_COL_NAME]
-        labels = df[contract.IS_IN_EPITOPE_COL_NAME]
-        ds = EpitopeDataset(calculated_features, labels)
-
-        logging.info("splitting to train, valid, test")
-        dl_train, dl_valid, dl_test = ds.iters(batch_size=DEFAULT_BATCH_SIZE)
-
-        cnn = CNN()
-        logging.info("learning")
-        train_accuracy, train_loss, test_accuracies, test_losses = train(cnn, DEFAULT_BATCH_SIZE, dl_train, dl_test)
-        plot_graph(test_accuracies, test_losses, train_accuracy, train_loss)
-
     def test(self, balanced_data_dir: str):
         files = glob.glob(os.path.join(balanced_data_dir, '*balanced*.fasta'))
         for file in files:
             logging.info(f"testing file {file}")
             logging.info("reading file")
             ds = load_dataset(file)
-
             logging.info("splitting to train, valid, test")
             dl_train, dl_valid, dl_test = ds.iters(batch_size=DEFAULT_BATCH_SIZE)
-
             cnn = CNN()
             logging.info("learning")
             train_accuracy, train_loss, test_accuracies, test_losses = train(cnn, DEFAULT_BATCH_SIZE, dl_train, dl_test)
