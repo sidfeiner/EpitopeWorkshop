@@ -49,10 +49,8 @@ class Epitopes(DFToCSV, CalculateBalance, SplitData):
             logging.info(f"testing file {file}")
             logging.info("reading file")
             ds = load_dataset(file)
-
             logging.info("splitting to train, valid, test")
             dl_train, dl_valid, dl_test = ds.iters(batch_size=DEFAULT_BATCH_SIZE)
-
             cnn = CNN()
             logging.info("learning")
             trainer = ModelTrainer(cnn, pos_weight)
