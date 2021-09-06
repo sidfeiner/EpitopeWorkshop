@@ -80,7 +80,7 @@ class Epitopes(CalculateBalance, SplitData):
             cnn.to_pth(persist_cnn_path)
 
     def test_trained_model(self, pth_path: str, test_files_dir: str, batch_size: int = DEFAULT_BATCH_SIZE,
-                           threshold: float = DEFAULT_IN_EPITOPE_THRESHOLD, pos_weight: Optional[float] = None):
+                           threshold: float = DEFAULT_IS_IN_EPITOPE_THRESHOLD, pos_weight: Optional[float] = None):
         total_records = 0
         total_success = 0
         test_files = glob.glob(os.path.join(test_files_dir, '*'))

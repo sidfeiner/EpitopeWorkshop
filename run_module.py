@@ -5,7 +5,7 @@ import numpy as np
 import torch
 
 import torch.utils.data as data_utils
-from EpitopeWorkshop.common.conf import DEFAULT_USING_NET_DEVICE, PATH_TO_CNN, IS_IN_EPITOP_THRESHOLD
+from EpitopeWorkshop.common.conf import DEFAULT_USING_NET_DEVICE, PATH_TO_CNN, DEFAULT_IS_IN_EPITOPE_THRESHOLD
 from EpitopeWorkshop.cnn.cnn import CNN
 from EpitopeWorkshop.dataset.EpitopeDataset import EpitopeDataset
 from EpitopeWorkshop.common import contract, utils, conf
@@ -42,7 +42,7 @@ def creat_predication(predications: torch.tensor, letters: pd.Series) -> pd.Seri
     start_seq_index = 0
     end_seq_index = 0
     for i, letter in enumerate(predications):
-        if letter >= IS_IN_EPITOP_THRESHOLD:
+        if letter >= DEFAULT_IS_IN_EPITOPE_THRESHOLD:
             if countRowCapital == 0:
                 firstCapialIndex = i
             countRowCapital += 1
