@@ -64,15 +64,15 @@ class Epitopes(CalculateBalance, SplitData):
               persist_cnn_path: Optional[str] = None, batch_size: int = DEFAULT_BATCH_SIZE,
               pos_weight: Optional[float] = None):
         cnn = CNN()
+        trainer = ModelTrainer(cnn, pos_weight)
 
-        train_files = glob.glob(os.path.join(train_files_dir, '*.df'))[:1]
+        train_files = glob.glob(os.path.join(train_files_dir, '*.df'))
         for epoch in range(epochs):
             logging.info(f"running on all train data, epoch {epoch}")
             random.shuffle(train_files)
             for file in train_files:
                 logging.info(f"training file {file}")
                 dl_train = load_df_as_dl(file, batch_size)
-                trainer = ModelTrainer(cnn, pos_weight)
                 trainer.train_model(dl_train, epoch_amt=1)
         logging.info("done training cnn")
         if persist_cnn_path is not None:
@@ -80,7 +80,7 @@ class Epitopes(CalculateBalance, SplitData):
             cnn.to_pth(persist_cnn_path)
 
     def test_trained_model(self, pth_path: str, test_files_dir: str, batch_size: int = DEFAULT_BATCH_SIZE,
-                           threshold: float = DEFAULT_IN_EPITOPE_THRESHOLD, pos_weight: Optional[float] = None):
+                           threshold: float = DEFAULT_IN_EPITOPE_THRESHOLD):
         total_records = 0
         total_success = 0
         test_files = glob.glob(os.path.join(test_files_dir, '*'))
