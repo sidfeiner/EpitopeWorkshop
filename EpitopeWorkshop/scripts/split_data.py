@@ -80,7 +80,7 @@ class SplitData:
                 batch_tensors.append(tensor)
                 batch_labels.append(label)
             final_df_path = os.path.join(final_dir,
-                                         f"iedb_linear_epitopes_{file_idx}_features_balanced_unique.df")
+                                         f"iedb_linear_epitopes_{file_idx}_balanced.df")
             self.data_to_df_disk(final_df_path, batch_tensors, batch_labels)
 
         def write_to_file(row: pd.Series, stats: FileStats):

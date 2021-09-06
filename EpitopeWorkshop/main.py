@@ -15,7 +15,6 @@ from EpitopeWorkshop.dataset.EpitopeDataset import EpitopeDataset
 from EpitopeWorkshop.common.conf import *
 from EpitopeWorkshop.cnn.cnn import CNN
 from EpitopeWorkshop.scripts.full_flow import CalculateBalance
-from EpitopeWorkshop.scripts.df_to_csv import DFToCSV
 from EpitopeWorkshop.scripts.split_data import SplitData
 
 log_format = "%(asctime)s : %(threadName)s: %(levelname)s : %(name)s : %(module)s : %(message)s"
@@ -41,7 +40,7 @@ def load_df_as_dl(path: str, batch_size: int):
                                        shuffle=True, num_workers=0)
 
 
-class Epitopes(DFToCSV, CalculateBalance, SplitData):
+class Epitopes(CalculateBalance, SplitData):
 
     def test(self, balanced_data_dir: str, pos_weight: Optional[float] = None):
         files = glob.glob(os.path.join(balanced_data_dir, '*balanced*.fasta'))
@@ -49,8 +48,10 @@ class Epitopes(DFToCSV, CalculateBalance, SplitData):
             logging.info(f"testing file {file}")
             logging.info("reading file")
             ds = load_dataset(file)
+
             logging.info("splitting to train, valid, test")
             dl_train, dl_valid, dl_test = ds.iters(batch_size=DEFAULT_BATCH_SIZE)
+
             cnn = CNN()
             logging.info("learning")
             trainer = ModelTrainer(cnn, pos_weight)
