@@ -14,3 +14,4 @@ NO_AMINO_ACID_CHAR = '-'
 DEFAULT_USING_NET_DEVICE = 'cpu'
 PATH_TO_CNN = 'C:\\Users\\User\\OneDrive\\TAU\\cs\\EpitopeWorkshop\\model-state.pth'
 MIN_EPITOP_SIZE = 4
+IS_IN_EPITOP_THRESHOLD = 0.55
