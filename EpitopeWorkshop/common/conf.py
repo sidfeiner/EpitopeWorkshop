@@ -12,5 +12,5 @@ DEFAULT_OVERSAMPLING_ALTERCATION_PCT_MAX = 107
 DEFAULT_IN_EPITOPE_THRESHOLD = 0.55
 NO_AMINO_ACID_CHAR = '-'
 DEFAULT_USING_NET_DEVICE = 'cpu'
-PATH_TO_CNN = 'C:\\Users\\User\\OneDrive\\TAU\\cs\\EpitopeWorkshop\\model-state.pth'
+PATH_TO_CNN = './data/cnn-balanced.pth'
 MIN_EPITOP_SIZE = 4
