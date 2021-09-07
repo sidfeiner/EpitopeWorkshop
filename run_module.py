@@ -1,4 +1,7 @@
 import logging
+import re
+from typing import List
+
 import fire
 import pandas as pd
 import numpy as np
@@ -8,7 +11,7 @@ import seaborn as sb
 import matplotlib.pyplot as plt
 
 from EpitopeWorkshop.common.conf import DEFAULT_USING_NET_DEVICE, PATH_TO_CNN, \
-    DEFAULT_IN_EPITOPE_THRESHOLD, MIN_EPITOPE_SIZE
+    DEFAULT_IS_IN_EPITOPE_THRESHOLD, DEFAULT_MIN_EPITOPE_SIZE
 from EpitopeWorkshop.cnn.cnn import CNN
 from EpitopeWorkshop.common import contract
 from EpitopeWorkshop.process.features import FeatureCalculator
@@ -35,30 +38,17 @@ class ClassifyPeptide:
         values = df[contract.CALCULATED_FEATURES_COL_NAME].to_numpy()
         return torch.tensor(np.stack(values))
 
-    def create_upper_case_string(self, raw_seq: list) -> str:
-        start_epitope_seq_index = 0
-        in_sequence = 0
-        for i, amino_acid in enumerate(raw_seq):
-            if amino_acid.islower():  # Not part of the epitope
-                if in_sequence >= MIN_EPITOPE_SIZE:  # The sequence is long enough to be at the epitope
-                    start_epitop_seq_index = 0
-                    in_sequence = 0
-                else:  # The sequence is not long enough to be part of the epitope
-                    while in_sequence > 0:
-                        raw_seq[start_epitope_seq_index] = raw_seq[start_epitope_seq_index].lower()
-                        in_sequence -= 1
-                        start_epitope_seq_index += 1
-            else:  # Found capital char
-                if in_sequence:  # Were already started epitope sequence
-                    in_sequence += 1
-                else:  # Starting an epitope sequence
-                    start_epitope_seq_index = i
-                    in_sequence += 1
-
-        return "".join(raw_seq)
+    def ensure_valid_epitope_lengths(self, peptide: List[str], min_epitope_size: int = DEFAULT_MIN_EPITOPE_SIZE):
+        pattern = re.compile(f"(^|[a-z])(?P<epitope>[A-Z]{{1,{min_epitope_size - 1}}})($|[a-z])")
+        peptide_cp = peptide.copy()
+        matches = re.finditer(pattern, ''.join(peptide_cp))
+        for match in matches:
+            for i in range(*match.span('epitope')):
+                peptide_cp[i] = peptide_cp[i].lower()
+        return ''.join(peptide_cp)
 
     def make_prediction_str(self, peptide: str, epitope_probas: pd.DataFrame,
-                            threshold: float = DEFAULT_IN_EPITOPE_THRESHOLD) -> str:
+                            threshold: float = DEFAULT_IS_IN_EPITOPE_THRESHOLD) -> str:
         letters_data = pd.Series([letter.lower() for letter in peptide], name="letters", dtype="string")
         epitopes_classification = epitope_probas >= threshold
         df = pd.DataFrame(data={'letters': letters_data,
@@ -68,7 +58,7 @@ class ClassifyPeptide:
         df['result_seq'] = df['letters'].mask(df['epitopes_classification'], df['letters'].str.upper())
         result_seq_lis = df['result_seq'].tolist()
 
-        return self.create_upper_case_string(result_seq_lis)
+        return self.ensure_valid_epitope_lengths(result_seq_lis)
 
     def create_heat_map(self, epitope_probas):
         heat_map = sb.heatmap(epitope_probas, cmap="YlGnBu")
