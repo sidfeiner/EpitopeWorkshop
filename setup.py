@@ -16,6 +16,8 @@ setup(
         'fire',
         'memoization',
         'dask',
-        'pandas'
+        'pandas',
+        'seaborn',
+        'numpy'
     ]
 )
