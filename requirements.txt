@@ -1,0 +1,8 @@
+biopython
+quantiprot
+fire
+memoization
+dask
+pandas
+seaborn
+numpy
