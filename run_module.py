@@ -7,8 +7,8 @@ import numpy as np
 import seaborn as sb
 import matplotlib.pyplot as plt
 
-from EpitopeWorkshop.common.conf import DEFAULT_USING_NET_DEVICE, PATH_TO_CNN,\
-    DEFAULT_IN_EPITOPE_THRESHOLD, MIN_EPITOP_SIZE
+from EpitopeWorkshop.common.conf import DEFAULT_USING_NET_DEVICE, PATH_TO_CNN, \
+    DEFAULT_IN_EPITOPE_THRESHOLD, MIN_EPITOPE_SIZE
 from EpitopeWorkshop.cnn.cnn import CNN
 from EpitopeWorkshop.common import contract
 from EpitopeWorkshop.process.features import FeatureCalculator
@@ -40,7 +40,7 @@ class ClassifyPeptide:
         in_sequence = 0
         for i, amino_acid in enumerate(raw_seq):
             if amino_acid.islower():  # Not part of the epitope
-                if in_sequence >= MIN_EPITOP_SIZE:  # The sequence is long enough to be at the epitope
+                if in_sequence >= MIN_EPITOPE_SIZE:  # The sequence is long enough to be at the epitope
                     start_epitop_seq_index = 0
                     in_sequence = 0
                 else:  # The sequence is not long enough to be part of the epitope
@@ -57,18 +57,20 @@ class ClassifyPeptide:
 
         return "".join(raw_seq)
 
-    def make_predication_str(self, peptide: str, epitope_probas: pd.DataFrame,
-                             threshold: float = DEFAULT_IS_IN_EPITOPE_THRESHOLD) -> str:
-        letters_data = pd.Series([letter.lower() for letter in peptide], name="Letters", dtype="string")
+    def make_prediction_str(self, peptide: str, epitope_probas: pd.DataFrame,
+                            threshold: float = DEFAULT_IN_EPITOPE_THRESHOLD) -> str:
+        letters_data = pd.Series([letter.lower() for letter in peptide], name="letters", dtype="string")
         epitopes_classification = epitope_probas >= threshold
-        df = pd.concat([letters_data, epitopes_classification], axis=1)
-        df.columns = ['Letters', 'epitopes_classification']
-        df['result_seq'] = df['Letters'].mask(df['epitopes_classification'], df['Letters'].str.upper())
+        df = pd.DataFrame(data={'letters': letters_data,
+                                'epitopes_classification': epitopes_classification}
+                          )
+        df.columns = ['letters', 'epitopes_classification']
+        df['result_seq'] = df['letters'].mask(df['epitopes_classification'], df['letters'].str.upper())
         result_seq_lis = df['result_seq'].tolist()
 
         return self.create_upper_case_string(result_seq_lis)
 
-    def create_head_map(self, epitope_probas):
+    def create_heat_map(self, epitope_probas):
         heat_map = sb.heatmap(epitope_probas, cmap="YlGnBu")
         plt.show()
 
@@ -83,10 +85,10 @@ class ClassifyPeptide:
         epitope_probas = pd.DataFrame(torch.sigmoid(cnn(data))).astype("float")
 
         logging.info(f"finished calculating probabilities, creating predication")
-        predication = self.make_predication_str(peptide, epitope_probas)
+        predication = self.make_prediction_str(peptide, epitope_probas)
 
-        print(f"The predicated protein sequence is:\n {predication}")
-        self.create_head_map(epitope_probas)
+        print(f"The predicted protein sequence is:\n {predication}")
+        self.create_heat_map(epitope_probas)
 
         print("Done")
 
