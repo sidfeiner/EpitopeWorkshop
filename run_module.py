@@ -1,10 +1,9 @@
 import logging
-import re
+import regex as re
 from typing import List
 
 import fire
 import pandas as pd
-import numpy as np
 import torch
 import numpy as np
 import seaborn as sb
@@ -39,9 +38,9 @@ class ClassifyPeptide:
         return torch.tensor(np.stack(values))
 
     def ensure_valid_epitope_lengths(self, peptide: List[str], min_epitope_size: int = DEFAULT_MIN_EPITOPE_SIZE):
-        pattern = re.compile(f"(^|[a-z])(?P<epitope>[A-Z]{{1,{min_epitope_size - 1}}})($|[a-z])")
+        pattern = re.compile(f"(?<=^|[a-z])(?P<epitope>[A-Z]{{1,{min_epitope_size - 1}}})(?=$|[a-z])")
         peptide_cp = peptide.copy()
-        matches = re.finditer(pattern, ''.join(peptide_cp))
+        matches = pattern.finditer(''.join(peptide_cp))
         for match in matches:
             for i in range(*match.span('epitope')):
                 peptide_cp[i] = peptide_cp[i].lower()
@@ -52,7 +51,7 @@ class ClassifyPeptide:
         letters_data = pd.Series([letter.lower() for letter in peptide], name="letters", dtype="string")
         epitopes_classification = epitope_probas >= threshold
         df = pd.DataFrame(data={'letters': letters_data,
-                                'epitopes_classification': epitopes_classification}
+                                'epitopes_classification': epitopes_classification[0]}
                           )
         df.columns = ['letters', 'epitopes_classification']
         df['result_seq'] = df['letters'].mask(df['epitopes_classification'], df['letters'].str.upper())
