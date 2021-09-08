@@ -84,7 +84,7 @@ class Epitopes(CalculateBalance, SplitData):
                     logging.info(f"persisting cnn to disk to {persist_cnn_path}")
                     cnn.to_pth(persist_cnn_path)
 
-                self.test_trained_model(persist_cnn_path, test_files_dir, batch_size, limit_test_file_freq=0.05)
+                # self.test_trained_model(persist_cnn_path, test_files_dir, batch_size, limit_test_file_freq=0.05)
         logging.info("done training cnn")
 
     def test_trained_model(self, pth_path: str, test_files_dir: str, batch_size: int = DEFAULT_BATCH_SIZE,
@@ -117,7 +117,7 @@ class Epitopes(CalculateBalance, SplitData):
                 file_positive_records += torch.sum(test_y == 1).float().item()
                 file_records += len(test_X)
             logging.info(
-                f"file records: {file_records}, success: {file_success}. Succes rate: {file_success / file_records}. Sucess rate for positive labels: {file_positive_success / max(1, file_positive_records)}")
+                f"file records: {file_records}, positive records: {file_positive_records}, success: {file_success}. Succes rate: {file_success / file_records}. Sucess rate for positive labels: {file_positive_success / max(1, file_positive_records)}")
             total_records += file_records
             total_success += file_success
             total_positive_records += file_positive_records
