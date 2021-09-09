@@ -44,12 +44,12 @@ class SplitData:
         df.to_pickle(path)
         return df
 
-    def split_data(self, balanced_files_dir: str, max_records_per_df: int = 5000):
+    def split_data(self, balanced_files_dir: str, max_records_per_df: int = 50000):
         files = glob.glob(os.path.join(balanced_files_dir, '*.fasta'))
-        train_files = [[] for _ in range(10)]  # type: List[List[torch.FloatTensor, int]]
+        train_files = [[] for _ in range(50)]  # type: List[List[torch.FloatTensor, int]]
         validation_files = [[] for _ in range(10)]  # type: List[List[torch.FloatTensor, int]]
-        test_files = [[] for _ in range(50)]  # type: List[List[torch.FloatTensor, int]]
-        hashes = {}  # type: Dict[Tuple[str, str], List[List[torch.FloatTensor, int]]]  # Map a hash to it's destination kind
+        test_files = [[] for _ in range(20)]  # type: List[List[torch.FloatTensor, int]]
+        hashes = {}  # type: Dict[Tuple[str, int, int], List[List[torch.FloatTensor, int]]]  # Map a hash to it's destination kind
 
         train_files_dir = os.path.join(balanced_files_dir, 'train-files')
         validation_files_dir = os.path.join(balanced_files_dir, 'validation-files')
@@ -86,7 +86,13 @@ class SplitData:
         def write_to_file(row: pd.Series, stats: FileStats):
             try:
                 _tensor = row[contract.CALCULATED_FEATURES_COL_NAME]  # type: torch.FloatTensor
-                hash_key = (row[contract.ID_COL_NAME], row[contract.SUB_SEQ_COL_NAME])
+                ss_probas = [(aa_feat[contract.FEATURES_TO_INDEX_MAPPING[contract.SS_ALPHA_HELIX_PROBA_COL_NAME]],
+                              aa_feat[contract.FEATURES_TO_INDEX_MAPPING[contract.SS_BETA_SHEET_PROBA_COL_NAME]]) for
+                             aa_feat in
+                             _tensor.numpy()[0]]
+                hash_key = (
+                    str(row[contract.SUB_SEQ_COL_NAME]), sum([x[0] for x in ss_probas]), sum([x[1] for x in ss_probas])
+                )
                 if hash_key not in hashes:
                     rnd = random.random()
                     if 0 < rnd < 0.2:
@@ -110,8 +116,8 @@ class SplitData:
                 logging.debug(
                     f"handled {stats.handled_records}/{stats.df_records}, failed:{stats.df_errors}")
 
-        for file in files:
-            logging.info(f"reading file {file}")
+        for index, file in enumerate(files):
+            logging.info(f"reading file ({index + 1}/{len(files)}) {file}")
             stats = FileStats(file)
             df = pd.read_pickle(file)  # type: pd.DataFrame
             stats.df_records = len(df)

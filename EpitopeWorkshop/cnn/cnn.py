@@ -9,7 +9,8 @@ from EpitopeWorkshop.common import contract
 KERNEL_SIZE = 3
 IN_CHANNELS = 1
 LAYER_1_CHANNELS = 6
-OUT_CHANNELS = 10
+LAYER_2_OUT_CHANNELS = 10
+LAYER_3_OUT_CHANNELS = 20
 PADDING = 1
 CLASSIFICATION_OPTIONS_AMT = 1
 
@@ -24,12 +25,16 @@ class CNN(nn.Module):
             ),
             nn.ReLU(),
             nn.Conv2d(
-                in_channels=LAYER_1_CHANNELS, out_channels=OUT_CHANNELS,
+                in_channels=LAYER_1_CHANNELS, out_channels=LAYER_2_OUT_CHANNELS,
+                kernel_size=KERNEL_SIZE, padding=PADDING),
+            nn.ReLU(),
+            nn.Conv2d(
+                in_channels=LAYER_2_OUT_CHANNELS, out_channels=LAYER_3_OUT_CHANNELS,
                 kernel_size=KERNEL_SIZE, padding=PADDING),
             nn.ReLU(),
         )
         self.classifier = nn.Sequential(
-            nn.Linear(OUT_CHANNELS * KERNEL_SIZE * KERNEL_SIZE * len(contract.FEATURES_ORDERED), 120),
+            nn.Linear(LAYER_3_OUT_CHANNELS * KERNEL_SIZE * KERNEL_SIZE * len(contract.FEATURES_ORDERED), 120),
             nn.ReLU(),
             nn.Linear(120, CLASSIFICATION_OPTIONS_AMT),
         )
