@@ -2,12 +2,13 @@ import glob
 import logging
 import os
 import random
-from typing import List, Tuple, Dict
+from typing import List
 import pandas as pd
 
 import torch
 
-from EpitopeWorkshop.common import contract
+from EpitopeWorkshop.common import contract, conf
+from EpitopeWorkshop.common.conf import DEFAULT_PRESERVE_FILES_IN_PROCESS
 
 
 class FileStats:
@@ -32,7 +33,7 @@ class AllStats:
         self.file_stats.append(stats)
 
 
-class SplitData:
+class ShuffleData:
     def data_to_df_disk(self, path: str, tensors, labels):
         df = pd.DataFrame(
             {
@@ -44,12 +45,12 @@ class SplitData:
         df.to_pickle(path)
         return df
 
-    def split_data(self, balanced_files_dir: str, max_records_per_df: int = 50000):
+    def shuffle_data_dir(self, balanced_files_dir: str, max_records_per_df: int = 350000,
+                         preserve_files_in_process: bool = DEFAULT_PRESERVE_FILES_IN_PROCESS):
         files = glob.glob(os.path.join(balanced_files_dir, '*.fasta'))
-        train_files = [[] for _ in range(50)]  # type: List[List[torch.FloatTensor, int]]
-        validation_files = [[] for _ in range(10)]  # type: List[List[torch.FloatTensor, int]]
-        test_files = [[] for _ in range(20)]  # type: List[List[torch.FloatTensor, int]]
-        hashes = {}  # type: Dict[Tuple[str, int, int], List[List[torch.FloatTensor, int]]]  # Map a hash to it's destination kind
+        train_files = [[] for _ in range(25)]  # type: List[List[torch.FloatTensor, int]]
+        validation_files = [[] for _ in range(5)]  # type: List[List[torch.FloatTensor, int]]
+        test_files = [[] for _ in range(10)]  # type: List[List[torch.FloatTensor, int]]
 
         train_files_dir = os.path.join(balanced_files_dir, 'train-files')
         validation_files_dir = os.path.join(balanced_files_dir, 'validation-files')
@@ -80,34 +81,26 @@ class SplitData:
                 batch_tensors.append(tensor)
                 batch_labels.append(label)
             final_df_path = os.path.join(final_dir,
-                                         f"iedb_linear_epitopes_{file_idx}_balanced.df")
+                                         f"iedb_linear_epitopes_{file_idx}_shuffled.df")
             self.data_to_df_disk(final_df_path, batch_tensors, batch_labels)
 
         def write_to_file(row: pd.Series, stats: FileStats):
             try:
                 _tensor = row[contract.CALCULATED_FEATURES_COL_NAME]  # type: torch.FloatTensor
-                ss_probas = [(aa_feat[contract.FEATURES_TO_INDEX_MAPPING[contract.SS_ALPHA_HELIX_PROBA_COL_NAME]],
-                              aa_feat[contract.FEATURES_TO_INDEX_MAPPING[contract.SS_BETA_SHEET_PROBA_COL_NAME]]) for
-                             aa_feat in
-                             _tensor.numpy()[0]]
-                hash_key = (
-                    str(row[contract.SUB_SEQ_COL_NAME]), sum([x[0] for x in ss_probas]), sum([x[1] for x in ss_probas])
-                )
-                if hash_key not in hashes:
-                    rnd = random.random()
-                    if 0 < rnd < 0.2:
-                        hashes[hash_key] = test_files
-                    elif 0.2 <= rnd < 0.3:
-                        hashes[hash_key] = validation_files
-                    else:
-                        hashes[hash_key] = train_files
+                rnd = random.random()
+                if 0 <= rnd < conf.DEFAULT_VALID_DATA_PCT:
+                    arr = test_files
+                elif conf.DEFAULT_VALID_DATA_PCT <= rnd < conf.DEFAULT_TEST_DATA_PCT:
+                    arr = validation_files
+                else:
+                    arr = train_files
 
-                target_file_idx = random.randint(0, len(hashes[hash_key]) - 1)
-                hashes[hash_key][target_file_idx].append((_tensor, row[contract.IS_IN_EPITOPE_COL_NAME]))
-                if len(hashes[hash_key][target_file_idx]) == max_records_per_df:
-                    persist_file_data(hashes[hash_key], target_file_idx)
-                    hashes[hash_key][target_file_idx] = []
-            except Exception as e:
+                target_file_idx = random.randint(0, len(arr) - 1)
+                arr[target_file_idx].append((_tensor, row[contract.IS_IN_EPITOPE_COL_NAME]))
+                if len(arr[target_file_idx]) == max_records_per_df:
+                    persist_file_data(arr, target_file_idx)
+                    arr[target_file_idx] = []
+            except Exception:
                 stats.df_errors += 1
                 logging.exception("failed handling record")
 
@@ -124,6 +117,9 @@ class SplitData:
             stats.handled_records = 0
             stats.df_errors = 0
             df.apply(lambda x: write_to_file(x, stats), axis=1)
+            del df
+            if not preserve_files_in_process:
+                logging.info(f"deleting file {file}")
 
         for lst in [train_files, validation_files, test_files]:
             for index in range(len(lst)):
@@ -131,3 +127,4 @@ class SplitData:
 
         logging.info(
             f"done! created train: {all_stats.created_train_dfs}, validation: {all_stats.created_validation_dfs}, test: {all_stats.created_test_dfs}")
+        return train_files_dir, validation_files_dir, test_files_dir

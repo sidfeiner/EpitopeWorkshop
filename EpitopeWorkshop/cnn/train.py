@@ -1,15 +1,15 @@
 import logging
-from typing import Optional
+from typing import Optional, List
 
 import torch
 import time
 
 from torch import optim, nn
 from torch.utils import data
-from EpitopeWorkshop.common.conf import DEFAULT_EPOCHS
+from EpitopeWorkshop.common.conf import DEFAULT_EPOCHS, DEFAULT_IS_IN_EPITOPE_THRESHOLD
 from EpitopeWorkshop.cnn.cnn import CNN
 
-TEST_BATCH_SIZE = 50
+TEST_BATCH_SIZE = 300
 
 
 class ModelTrainer:
@@ -19,7 +19,6 @@ class ModelTrainer:
             pos_weight=torch.tensor(pos_weight)
         ) if pos_weight is not None else torch.nn.BCEWithLogitsLoss()
         self.optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
-
 
     def train_model(self, dl_train: data.Dataset, epoch_amt: int = DEFAULT_EPOCHS):
         for epoch in range(epoch_amt):  # loop over the dataset multiple times
@@ -47,9 +46,9 @@ class ModelTrainer:
                     )
                     running_loss = 0.0
 
-
-    def train(self, batch_size: int, dl_train: data.Dataset, dl_test: data.Dataset, epoch_amt: int = DEFAULT_EPOCHS,
-              max_batches=20):
+    def train(self, batch_size: int, dl_train: data.Dataset, dls_test: List[data.Dataset],
+              epoch_amt: int = DEFAULT_EPOCHS,
+              max_batches=20, threshold=DEFAULT_IS_IN_EPITOPE_THRESHOLD):
         test_accuracies, test_losses = [], []
         train_accuracy, train_loss = [], []
 
@@ -66,7 +65,7 @@ class ModelTrainer:
 
                 # Backward pass
                 self.optimizer.zero_grad()
-                loss = self.loss_func(y_pred_log_proba, y)
+                loss = self.loss_func(y_pred_log_proba, y.unsqueeze(1).float())
                 loss.backward()
 
                 # Weight updates
@@ -74,21 +73,24 @@ class ModelTrainer:
 
                 # Calculate accuracy
                 total_loss += loss.item()
-                y_pred = torch.argmax(y_pred_log_proba, dim=1)
-                n_correct += torch.sum(y_pred == y).float().item()
+                y_pred = y_pred_log_proba >= threshold
+                n_correct += torch.sum(y_pred == y.unsqueeze(1).float()).float().item()
                 if (total_batch_idx + 1) % TEST_BATCH_SIZE == 0:
                     logging.debug(f"comparing with all the test data at batch {total_batch_idx + 1}")
-                    dl_test_iter = iter(dl_test)
                     test_total_acc, test_total_loss = 0, 0
-                    for test_batch in dl_test_iter:
-                        test_X, test_y = test_batch[0], test_batch[1]
-                        test_pred_log_proba = self.model(test_X)
-                        test_predication = torch.argmax(test_pred_log_proba, dim=1)
-                        loss = self.loss_func(test_pred_log_proba, test_y)
-                        test_total_loss += loss.item()
-                        test_total_acc += torch.sum(test_predication == test_y).float().item()
-                    test_accuracies.append(test_total_acc / (len(dl_test) * batch_size))
-                    test_losses.append(test_total_loss / len(dl_test))
+                    dls_test_len = 0
+                    for dl_test in dls_test:
+                        dl_test_iter = iter(dl_test)
+                        dls_test_len += len(dl_test)
+                        for test_batch in dl_test_iter:
+                            test_X, test_y = test_batch[0], test_batch[1]
+                            test_pred_log_proba = self.model(test_X)
+                            test_predication = test_pred_log_proba >= threshold
+                            loss = self.loss_func(test_pred_log_proba, test_y.unsqueeze(1).float())
+                            test_total_loss += loss.item()
+                            test_total_acc += torch.sum(test_predication == test_y.unsqueeze(1).float()).float().item()
+                    test_accuracies.append(test_total_acc / (dls_test_len * batch_size))
+                    test_losses.append(test_total_loss / dls_test_len)
                     train_accuracy.append(n_correct / (TEST_BATCH_SIZE * batch_size))
                     train_loss.append(total_loss / TEST_BATCH_SIZE)
                     n_correct, total_loss = 0, 0

@@ -51,7 +51,7 @@ class EpitopeDataset(data.Dataset):
             batch_size: Batch_size
         """
         return [torch.utils.data.DataLoader(ds, batch_size=batch_size,
-                                            shuffle=True, num_workers=2) for ds in self.splits()]
+                                            shuffle=True, num_workers=0) for ds in self.splits()]
 
     def __getitem__(self, index: int):
         return (

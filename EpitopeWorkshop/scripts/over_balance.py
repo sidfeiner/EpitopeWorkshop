@@ -52,6 +52,7 @@ class OverBalancer:
             path=final_path,
             protocol=pickle.HIGHEST_PROTOCOL
         )
+
         return df
 
     def over_balance_file(self, features_df_pickle_path: str,
@@ -63,8 +64,10 @@ class OverBalancer:
         name, ext = os.path.splitext(basename)
         logging.info("loading df")
         df = pd.read_pickle(features_df_pickle_path)
+        balanced_dir = os.path.join(dir_path, 'balanced')
+        os.makedirs(balanced_dir, exist_ok=True)
         self.over_balance_df(
-            df, os.path.join(dir_path, 'balanced', f"{name}_balanced{ext}"),
+            df, os.path.join(balanced_dir, f"{name}_balanced{ext}"),
             oversampling_change_val_proba, oversampling_altercation_pct_min,
             oversampling_altercation_pct_max
         )

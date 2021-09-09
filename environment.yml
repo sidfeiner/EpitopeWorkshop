@@ -1,0 +1,26 @@
+name: workshop
+channels:
+  - pytorch
+  - defaults
+  - conda-forge
+  - bioconda
+dependencies:
+  - python=3.7.0
+  - cython
+  - ipython
+  - jupyter
+  - jupyterlab
+  - matplotlib
+  - numpy
+  - pandas=1.3.0
+  - pillow
+  - pytest
+  - pytorch=1.6.0
+  - pip
+  - pip:
+      - biopython
+      - fire
+      - memoization
+      - regex
+
+

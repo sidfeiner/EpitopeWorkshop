@@ -43,24 +43,6 @@ class FeatureTransformer:
             index = contract.FEATURES_TO_INDEX_MAPPING[random_potential_type]
             row[index] = 1 - row[index]
 
-        # Change Volume
-        change_volume = random.random() <= self.change_val_proba
-        if change_volume:
-            pct_change = self._get_random_pct()
-            row[contract.FEATURES_TO_INDEX_MAPPING[contract.COMPUTED_VOLUME_COL_NAME]] *= (pct_change / 100)
-
-        # Change Hydrophobicity
-        change_hydro = random.random() <= self.change_val_proba
-        if change_hydro:
-            pct_change = self._get_random_pct()
-            row[contract.FEATURES_TO_INDEX_MAPPING[contract.HYDROPHOBICITY_COL_NAME]] *= (pct_change / 100)
-
-        # Change RSA
-        change_rsa = random.random() <= self.change_val_proba
-        if change_rsa:
-            pct_change = self._get_random_pct()
-            row[contract.FEATURES_TO_INDEX_MAPPING[contract.SA_COL_NAME]] *= (pct_change / 100)
-
         # Change Secondary Structure Alpha Helix probability
         change_ss_alpha = random.random() <= self.change_val_proba
         if change_ss_alpha:
@@ -73,13 +55,6 @@ class FeatureTransformer:
         if change_ss_beta:
             pct_change = self._get_random_pct()
             index = contract.FEATURES_TO_INDEX_MAPPING[contract.SS_ALPHA_HELIX_PROBA_COL_NAME]
-            self._set_proba_val(row, index, pct_change)
-
-        # Change Polarity probability
-        change_polar_proba = random.random() <= self.change_val_proba
-        if change_polar_proba:
-            pct_change = self._get_random_pct()
-            index = contract.FEATURES_TO_INDEX_MAPPING[contract.POLARITY_PROBA_COL_NAME]
             self._set_proba_val(row, index, pct_change)
 
         return row

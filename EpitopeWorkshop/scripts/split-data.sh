@@ -6,7 +6,8 @@ totalWorkers=$1
 for ((i = 0; i < totalWorkers; i++))
 do
 python /Users/sfeiner/Documents/studies/biology/EpitopeWorkshop/EpitopeWorkshop/main.py \
-run-flow \
---total-workers $totalWorkers --worker-id $i \
---sequences_files_dir /Users/sfeiner/Documents/studies/biology/EpitopeWorkshop/data/iedb-linear-epitopes-parts-2 &
+split-data-dir \
+--balanced-files-dir /Users/sfeiner/Documents/studies/biology/EpitopeWorkshop/data/iedb-linear-epitopes-parts-2/features/balanced \
+--total-workers $totalWorkers --worker-id $i &
 done
+
