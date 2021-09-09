@@ -5,12 +5,16 @@ import shutil
 from typing import Optional
 
 import multiprocessing
+
+import fire
+
 from EpitopeWorkshop.common.conf import *
 from EpitopeWorkshop.scripts.calculate_features import FileFeatureCalculator
 from EpitopeWorkshop.scripts.classify_peptide import PeptideClassifier
 from EpitopeWorkshop.scripts.over_balance import OverBalancer
 from EpitopeWorkshop.scripts.split_data import ShuffleData
 from EpitopeWorkshop.scripts.split_iedb_epitopes import SplitIEDBEpitopes
+from EpitopeWorkshop.scripts.train import Train
 
 
 class PoolWorkerResults:
@@ -23,11 +27,12 @@ class PoolWorkerResults:
 
 class FullFlow:
     def __init__(self):
-        self.splitter = SplitIEDBEpitopes()
+        self.split = SplitIEDBEpitopes()
         self.features = FileFeatureCalculator()
-        self.over_balancer = OverBalancer()
+        self.over_balance = OverBalancer()
         self.shuffle = ShuffleData()
         self.classify = PeptideClassifier()
+        self.trainer = Train()
 
     def _run_worker_flow(self, sequences_files_dir: str, total_workers: int, worker_id: int,
                          window_size: int = DEFAULT_WINDOW_SIZE,
@@ -48,7 +53,7 @@ class FullFlow:
             # `df` is the dataframe with the calculated features
             logging.info(f"balancing file {file_name}")
             balanced_df_path = os.path.join(balanced_dir, os.path.basename(file_name))
-            self.over_balancer.over_balance_df(
+            self.over_balance.over_balance_df(
                 df, balanced_df_path, oversampling_change_val_proba,
                 oversampling_altercation_pct_min, oversampling_altercation_pct_max
             )
@@ -57,13 +62,21 @@ class FullFlow:
         logging.info(f"worker {worker_id} finished calculating features and over balancing files")
         return balanced_dir
 
+    def _move_files_in_dir_to_dir(self, src_dir: str, dst_dir: str):
+        files = glob.glob(os.path.join(src_dir, '*'))
+        for file in files:
+            shutil.move(file, dst_dir)
+
     def run_flow(self, sequences_files_dir: str, total_workers: int = 1,
                  split_file_to_parts_amt: Optional[int] = None,
                  window_size: int = DEFAULT_WINDOW_SIZE,
                  oversampling_change_val_proba: float = DEFAULT_OVERSAMPLING_CHANGE_VAL_PROBA,
                  oversampling_altercation_pct_min: int = DEFAULT_OVERSAMPLING_ALTERCATION_PCT_MIN,
                  oversampling_altercation_pct_max: int = DEFAULT_OVERSAMPLING_ALTERCATION_PCT_MAX,
-                 preserve_files_in_process: bool = DEFAULT_PRESERVE_FILES_IN_PROCESS
+                 preserve_files_in_process: bool = DEFAULT_PRESERVE_FILES_IN_PROCESS,
+                 batch_size: int = DEFAULT_BATCH_SIZE,
+                 epochs: int = DEFAULT_EPOCHS,
+                 cnn_path: str = PATH_TO_USER_CNN
                  ):
         """
         This is the main entry point for learning.
@@ -82,12 +95,15 @@ class FullFlow:
                                                  for a field's value during over balance.. Defaults to 103.
         :param preserve_files_in_process: If true, all files created during the process will be deleted when they're not
                                           needed anymore.
+        :param batch_size: batch size when the CNN learns
+        :param epochs: epochs to run the data
+        :param cnn_path: path to store the cnn, use this path if you want to classify using your cnn
         """
         if split_file_to_parts_amt is not None:
             sequences_files_dir = os.path.join(sequences_files_dir, 'split')
             logging.info(f'splitting original files into dir: {sequences_files_dir}')
             for file in glob.glob(os.path.join(sequences_files_dir, '*.fasta')):
-                self.splitter.split_iebdb_file(file, split_file_to_parts_amt, sequences_files_dir)
+                self.split.split_iebdb_file(file, split_file_to_parts_amt, sequences_files_dir)
 
         results = PoolWorkerResults()
 
@@ -119,3 +135,26 @@ class FullFlow:
             validation_dirs.add(validation_dir)
             test_dirs.add(test_dir)
         logging.info("done shuffling data")
+
+        all_train_files_dir = os.path.join(sequences_files_dir, 'all-train')
+        all_validation_files_dir = os.path.join(sequences_files_dir, 'all-validation')
+        all_test_files_dir = os.path.join(sequences_files_dir, 'all-test')
+
+        dir_mapping = {
+            all_train_files_dir: train_dirs,
+            all_validation_files_dir: validation_dirs,
+            all_test_files_dir: test_dirs
+        }
+        for dst, srcs in dir_mapping.items():
+            for src in srcs:
+                self._move_files_in_dir_to_dir(src, dst)
+
+        self.trainer.train(all_train_files_dir, all_validation_files_dir, all_test_files_dir, epochs,
+                           cnn_path, batch_size, preserve_files_in_process=preserve_files_in_process)
+
+
+if __name__ == '__main__':
+    log_format = "%(asctime)s : %(threadName)s : %(levelname)s : %(name)s : %(module)s : %(message)s"
+    log_level = os.getenv('LOG_LEVEL', 'WARN')
+    logging.basicConfig(format=log_format, level=log_level)
+    fire.Fire(FullFlow)

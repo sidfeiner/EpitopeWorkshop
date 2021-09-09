@@ -9,7 +9,7 @@ from torch.utils import data
 from EpitopeWorkshop.common.conf import DEFAULT_EPOCHS, DEFAULT_IS_IN_EPITOPE_THRESHOLD
 from EpitopeWorkshop.cnn.cnn import CNN
 
-TEST_BATCH_SIZE = 300
+TEST_BATCH_SIZE = 1000
 
 
 class ModelTrainer:
@@ -58,6 +58,8 @@ class ModelTrainer:
             start_timestamp = time.time()
 
             for total_batch_idx, batch in enumerate(dl_train):
+                if total_batch_idx % 2000 == 0:
+                    logging.debug(f"running batch {total_batch_idx + 1}/{len(dl_train)}")
                 X, y = batch[0], batch[1]
 
                 # Forward pass

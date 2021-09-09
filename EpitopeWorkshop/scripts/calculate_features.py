@@ -32,8 +32,7 @@ class FileFeatureCalculator:
 
         logging.info("saving full file to pickle file")
         raw_data_path = os.path.join(final_dir, f"{name}_features{ext}")
-        df[[contract.ID_COL_NAME, contract.SUB_SEQ_COL_NAME, contract.CALCULATED_FEATURES_COL_NAME,
-            contract.IS_IN_EPITOPE_COL_NAME]].to_pickle(
+        df[[contract.CALCULATED_FEATURES_COL_NAME, contract.IS_IN_EPITOPE_COL_NAME]].to_pickle(
             path=raw_data_path,
             protocol=pickle.HIGHEST_PROTOCOL
         )
