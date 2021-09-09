@@ -88,7 +88,7 @@ class Epitopes(CalculateBalance, SplitData):
         logging.info("done training cnn")
 
     def test_trained_model(self, pth_path: str, test_files_dir: str, batch_size: int = DEFAULT_BATCH_SIZE,
-                           threshold: float = DEFAULT_IN_EPITOPE_THRESHOLD,
+                           threshold: float = DEFAULT_IS_IN_EPITOPE_THRESHOLD,
                            limit_test_file_freq: Optional[float] = None):
         total_records = 0
         total_success = 0
