@@ -15,9 +15,9 @@ setup(
         'quantiprot',
         'fire',
         'memoization',
-        'dask',
         'pandas',
         'seaborn',
-        'numpy'
+        'numpy',
+        'regex',
     ]
 )
