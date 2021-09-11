@@ -91,8 +91,8 @@ class FullFlow:
 
     def classify(self, sequence: str, heat_map_name: Optional[str] = None, cnn_name: str = CNN_NAME):
         """Classify a sequence based on some CNN.
-        :param peptide: amino acid sequence
-        :param heat_map_path: If given, heat map will be saved to this location (container file-system). Be sure to
+        :param sequence: amino acid sequence
+        :param heat_map_name: If given, heat map will be saved to this location (container file-system). Be sure to
                               mount this directory to access it from your computer
         :param cnn_name: Name of CNN to use for this classification. To know which cnns are available, run list-cnns command
         """

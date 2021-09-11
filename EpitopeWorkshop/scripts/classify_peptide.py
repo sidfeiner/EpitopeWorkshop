@@ -64,15 +64,15 @@ class PeptideClassifier:
         figure = heat_map.get_figure()
         figure.savefig(os.path.join(HEAT_MAP_DIR, path))
 
-    def classify_peptide(self, peptide: str, heat_map_name: Optional[str] = None, cnn_name: str = CNN_NAME):
+    def classify_peptide(self, sequence: str, heat_map_name: Optional[str] = None, cnn_name: str = CNN_NAME):
         """
-        :param peptide: amino acid sequence
-        :param heat_map_path: If given, heat map will be saved to this location (container file-system). Be sure to
+        :param sequence: amino acid sequence
+        :param heat_map_name: If given, heat map will be saved to this location (container file-system). Be sure to
                               mount this directory to access it from your computer
         :param cnn_name: Name of CNN to use for this classification
         """
         logging.info(f"preparing data to input")
-        data = self._prepare_data(peptide)
+        data = self._prepare_data(sequence)
 
         logging.info(f"activating trained CNN")
         cnn = self._load_net(cnn_name)
@@ -81,7 +81,7 @@ class PeptideClassifier:
         epitope_probas = pd.DataFrame(torch.sigmoid(cnn(data))).astype("float")
 
         logging.info(f"finished calculating probabilities, creating prediction")
-        prediction = self._make_prediction_str(peptide, epitope_probas)
+        prediction = self._make_prediction_str(sequence, epitope_probas)
 
         if heat_map_name is not None:
             self._create_heat_map(epitope_probas, heat_map_name)
