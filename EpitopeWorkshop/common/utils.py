@@ -14,14 +14,11 @@ PARTIAL_DATA_INDEX_PATTERN = re.compile(r'(\d+)[^\\/]+')
 
 def split_to_subsequences(sequence: Union[str, Seq], size: int, empty_char: str = conf.NO_AMINO_ACID_CHAR) -> List[Seq]:
     sub_seqs = []
-    for i in range(size // 2, 0, -1):
-        subseq = empty_char * i + sequence[:size - i]
-        sub_seqs.append(subseq)
-    end_index = len(sequence) - size + 1
-    for current_start_index in range(end_index):
-        sub_seqs.append(sequence[current_start_index:current_start_index + size])
-    for i in range(size // 2):
-        subseq = sequence[-size + 1 + i:] + empty_char * (i + 1)
+    for i in range(len(sequence)):
+        left = sequence[max(i - 4, 0):min(i, len(sequence))]
+        right = sequence[min(len(sequence), i + 1):min(i + 5, len(sequence))]
+        subseq = conf.NO_AMINO_ACID_CHAR * (size // 2 - len(left)) + left + sequence[
+            i] + right + conf.NO_AMINO_ACID_CHAR * (size // 2 - len(right))
         sub_seqs.append(subseq)
     return sub_seqs
 
