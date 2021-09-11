@@ -1,4 +1,6 @@
 import logging
+import os
+
 import regex as re
 from typing import List, Optional
 
@@ -9,21 +11,19 @@ import numpy as np
 import seaborn as sb
 
 from EpitopeWorkshop.common.conf import DEFAULT_USING_NET_DEVICE, PATH_TO_CNN, \
-    DEFAULT_IS_IN_EPITOPE_THRESHOLD, DEFAULT_MIN_EPITOPE_SIZE
+    DEFAULT_IS_IN_EPITOPE_THRESHOLD, DEFAULT_MIN_EPITOPE_SIZE, CNN_NAME, PATH_TO_CNN_DIR, HEAT_MAP_DIR
 from EpitopeWorkshop.cnn.cnn import CNN
 from EpitopeWorkshop.common import contract
 from EpitopeWorkshop.process.features import FeatureCalculator
 from EpitopeWorkshop.process.read import prep_data_per_sequence, build_df
 
-log_format = "%(asctime)s : %(threadName)s: %(levelname)s : %(name)s : %(module)s : %(message)s"
-logging.basicConfig(format=log_format, level=logging.DEBUG)
-
 
 class PeptideClassifier:
 
-    def _load_net(self, path: str = PATH_TO_CNN):
+    def _load_net(self, cnn_name: str = CNN_NAME):
         cnn = CNN()
-        cnn.load_state_dict(torch.load(path, map_location=DEFAULT_USING_NET_DEVICE))
+        cnn_path = os.path.join(PATH_TO_CNN_DIR, cnn_name)
+        cnn.load_state_dict(torch.load(cnn_path, map_location=DEFAULT_USING_NET_DEVICE))
         cnn.eval()
 
         return cnn
@@ -37,6 +37,7 @@ class PeptideClassifier:
         return torch.tensor(np.stack(values))
 
     def _ensure_valid_epitope_lengths(self, peptide: List[str], min_epitope_size: int = DEFAULT_MIN_EPITOPE_SIZE):
+        """Lower epitope sequences that are shorter than min_epitope_size"""
         pattern = re.compile(f"(?<=^|[a-z])(?P<epitope>[A-Z]{{1,{min_epitope_size - 1}}})(?=$|[a-z])")
         peptide_cp = peptide.copy()
         matches = pattern.finditer(''.join(peptide_cp))
@@ -61,30 +62,30 @@ class PeptideClassifier:
     def _create_heat_map(self, epitope_probas, path: str):
         heat_map = sb.heatmap(epitope_probas, cmap="YlGnBu")
         figure = heat_map.get_figure()
-        figure.savefig(path)
+        figure.savefig(os.path.join(HEAT_MAP_DIR, path))
 
-    def classify_peptide(self, peptide: str, heat_map_path: Optional[str] = None, cnn_path: str=PATH_TO_CNN):
+    def classify_peptide(self, peptide: str, heat_map_name: Optional[str] = None, cnn_name: str = CNN_NAME):
         """
         :param peptide: amino acid sequence
         :param heat_map_path: If given, heat map will be saved to this location (container file-system). Be sure to
                               mount this directory to access it from your computer
+        :param cnn_name: Name of CNN to use for this classification
         """
         logging.info(f"preparing data to input")
         data = self._prepare_data(peptide)
 
         logging.info(f"activating trained CNN")
-        cnn = self._load_net(cnn_path)
+        cnn = self._load_net(cnn_name)
 
         logging.info(f"running.....")
         epitope_probas = pd.DataFrame(torch.sigmoid(cnn(data))).astype("float")
 
-        logging.info(f"finished calculating probabilities, creating predication")
-        predication = self._make_prediction_str(peptide, epitope_probas)
+        logging.info(f"finished calculating probabilities, creating prediction")
+        prediction = self._make_prediction_str(peptide, epitope_probas)
 
-        print(f"The predicted protein sequence is:\n {predication}")
-        if heat_map_path is not None:
-            self._create_heat_map(epitope_probas, heat_map_path)
-            print("")
+        if heat_map_name is not None:
+            self._create_heat_map(epitope_probas, heat_map_name)
+        return prediction
 
 
 if __name__ == '__main__':

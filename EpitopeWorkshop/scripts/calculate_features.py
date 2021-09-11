@@ -1,10 +1,8 @@
 import glob
 import logging
 import multiprocessing
-import os
 import pickle
 import shutil
-from typing import Optional
 
 from EpitopeWorkshop.common import contract, utils
 from EpitopeWorkshop.common.conf import *
@@ -50,7 +48,7 @@ class FileFeatureCalculator:
         )
         logging.info(f"done handling {sequences_file_path}")
         if preserve_files_in_process:
-            shutil.move(sequences_file_path, done_dir)
+            shutil.move(sequences_file_path, os.path.join(done_dir, os.path.basename(sequences_file_path)))
         else:
             logging.info(f'removing file {sequences_file_path}')
             os.remove(sequences_file_path)

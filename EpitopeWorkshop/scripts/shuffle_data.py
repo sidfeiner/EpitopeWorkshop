@@ -8,7 +8,7 @@ import pandas as pd
 import torch
 
 from EpitopeWorkshop.common import contract, conf
-from EpitopeWorkshop.common.conf import DEFAULT_PRESERVE_FILES_IN_PROCESS
+from EpitopeWorkshop.common.conf import DEFAULT_PRESERVE_FILES_IN_PROCESS, DEFAULT_RECORDS_IN_FINAL_DF
 
 
 class FileStats:
@@ -35,6 +35,7 @@ class AllStats:
 
 class ShuffleData:
     """Shuffle data to different files for random learning"""
+
     def data_to_df_disk(self, path: str, tensors, labels):
         df = pd.DataFrame(
             {
@@ -46,7 +47,7 @@ class ShuffleData:
         df.to_pickle(path)
         return df
 
-    def shuffle_data_dir(self, balanced_files_dir: str, max_records_per_df: int = 350000,
+    def shuffle_data_dir(self, balanced_files_dir: str, max_records_per_df: int = DEFAULT_RECORDS_IN_FINAL_DF,
                          preserve_files_in_process: bool = DEFAULT_PRESERVE_FILES_IN_PROCESS):
         """
         :param balanced_files_dir: Directory with pickled df files
