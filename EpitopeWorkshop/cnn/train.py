@@ -9,16 +9,16 @@ from torch.utils import data
 from EpitopeWorkshop.common.conf import DEFAULT_EPOCHS, DEFAULT_IS_IN_EPITOPE_THRESHOLD
 from EpitopeWorkshop.cnn.cnn import CNN
 
-TEST_BATCH_SIZE = 1000
+TEST_BATCH_SIZE = 3000
 
 
 class ModelTrainer:
-    def __init__(self, model: CNN, pos_weight: Optional[float] = None):
+    def __init__(self, model: CNN, pos_weight: Optional[float] = None, weight_decay: Optional[float]=1e-2):
         self.model = model
         self.loss_func = nn.BCEWithLogitsLoss(
             pos_weight=torch.tensor(pos_weight)
         ) if pos_weight is not None else torch.nn.BCEWithLogitsLoss()
-        self.optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
+        self.optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9, weight_decay=weight_decay)
 
     def train_model(self, dl_train: data.Dataset, epoch_amt: int = DEFAULT_EPOCHS):
         for epoch in range(epoch_amt):  # loop over the dataset multiple times

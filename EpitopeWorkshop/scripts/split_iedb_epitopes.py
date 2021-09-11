@@ -6,7 +6,17 @@ import fire
 
 
 class SplitIEDBEpitopes:
+    """
+    Splits an iedb fasta file to multiple fasta files
+    """
     def split_iebdb_file(self, path: str, files_amt: int = 100, target_dir: Optional[str] = None):
+        """
+        :param path: path to fasta file that needs to be split
+        :param files_amt: Amount of files to split to
+        :param target_dir: If given, split files will be created there. Defaults to 'split' directory
+                           inside the `path` parent directory
+        :return: `target_dir` where files were created
+        """
         target_dir = target_dir or os.path.join(os.path.dirname(path), 'split')
         base, ext = os.path.splitext(os.path.basename(path))
         lines_per_file = [[] for _ in range(files_amt)]

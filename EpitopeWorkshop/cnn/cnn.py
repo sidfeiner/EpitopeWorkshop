@@ -21,7 +21,7 @@ class CNN(nn.Module):
         self.feature_extractor = nn.Sequential(
             nn.Conv2d(
                 IN_CHANNELS, out_channels=LAYER_1_CHANNELS,
-                kernel_size=KERNEL_SIZE, padding=PADDING
+                kernel_size=KERNEL_SIZE, padding=PADDING,
             ),
             nn.ReLU(),
             nn.Conv2d(

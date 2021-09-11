@@ -116,4 +116,4 @@ def load_fasta_row_per_window(path: str,
                 print(f"found features: {record.features}")
             if limit_sequences_amt is not None and limit_sequences_amt == idx:
                 break
-    return build_df(ids, seqs, sub_sequence_index_start, sub_seqs, is_in_epitope)
+    return build_df(ids, seqs, sub_seqs, sub_sequence_index_start, is_in_epitope)

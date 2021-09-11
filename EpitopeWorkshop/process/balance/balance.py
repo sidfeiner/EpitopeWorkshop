@@ -60,13 +60,10 @@ class OverSamplingDefiner:
             self.remaning_rows_to_duplicate = total_rows_to_duplicate
 
     @classmethod
-    def update_mask(cls, row: pd.Series, balance_val: Any, remaining_ref: RemaningDuplicates, *args, **kwargs):
-        if row[VAL_COL_NAME] != balance_val or remaining_ref.remaning_rows_to_duplicate == 0:
+    def update_mask(cls, row: pd.Series, balance_val: Any, duplicates: int, *args, **kwargs):
+        if row[VAL_COL_NAME] != balance_val:
             return row[MASK_COL_NAME]
-        random_duplicates_limit = max(1, remaining_ref.remaning_rows_to_duplicate // remaining_ref.org_rows_amt)
-        duplicates = random.randint(0, random_duplicates_limit)
-        remaining_ref.remaning_rows_to_duplicate -= duplicates
-        return row[MASK_COL_NAME] + duplicates
+        return duplicates
 
     @classmethod
     def update_balancer_col(cls, mask_df: pd.DataFrame, balance_val: Any, handled_vals: List[Any],
@@ -79,11 +76,10 @@ class OverSamplingDefiner:
         desired_freq = balances[balance_val] if maximum_freq_is_balance_val else sum(
             [balance for v, balance in balances.items() if v != balance_val and balance not in handled_vals])
         next_series_size = max(cur_final_series_size, maximum_amt / desired_freq)
-        remaning_ref = cls.RemaningDuplicates(counts[True], next_series_size * desired_freq - counts[True])
-        update_mask_func = functools.partial(cls.update_mask, balance_val=balance_val, remaining_ref=remaning_ref)
-        while remaning_ref.total_rows_to_duplicate > 0 \
-                and remaning_ref.remaning_rows_to_duplicate / remaning_ref.total_rows_to_duplicate >= 0.05:
-            mask_df[MASK_COL_NAME] = mask_df.apply(update_mask_func, axis=1)
+        records_to_duplicate = next_series_size * desired_freq - counts[True]
+        duplicates_per_row = int(records_to_duplicate // counts[True])
+        update_mask_func = functools.partial(cls.update_mask, balance_val=balance_val, duplicates=duplicates_per_row)
+        mask_df[MASK_COL_NAME] = mask_df.apply(update_mask_func, axis=1)
         return next_series_size
 
 

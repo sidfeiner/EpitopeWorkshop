@@ -2,6 +2,7 @@ import glob
 import logging
 import os
 import shutil
+import time
 from typing import Optional
 
 import multiprocessing
@@ -29,10 +30,10 @@ class FullFlow:
     def __init__(self):
         self.split = SplitIEDBEpitopes()
         self.features = FileFeatureCalculator()
-        self.over_balance = OverBalancer()
+        self.over_balancer = OverBalancer()
         self.shuffle = ShuffleData()
-        self.classify = PeptideClassifier()
         self.trainer = Train()
+        self.classify = PeptideClassifier()
 
     def _run_worker_flow(self, sequences_files_dir: str, total_workers: int, worker_id: int,
                          window_size: int = DEFAULT_WINDOW_SIZE,
@@ -41,7 +42,7 @@ class FullFlow:
                          oversampling_altercation_pct_max: int = DEFAULT_OVERSAMPLING_ALTERCATION_PCT_MAX,
                          preserve_files_in_process: bool = DEFAULT_PRESERVE_FILES_IN_PROCESS
                          ):
-        file_and_dfs = self.features.calculate_features_dir(
+        file_and_dfs = self.features._calculate_features_dir(
             sequences_files_dir, total_workers, worker_id,
             window_size, preserve_files_in_process
         )
@@ -53,7 +54,7 @@ class FullFlow:
             # `df` is the dataframe with the calculated features
             logging.info(f"balancing file {file_name}")
             balanced_df_path = os.path.join(balanced_dir, os.path.basename(file_name))
-            self.over_balance.over_balance_df(
+            self.over_balancer.over_balance_df(
                 df, balanced_df_path, oversampling_change_val_proba,
                 oversampling_altercation_pct_min, oversampling_altercation_pct_max
             )
@@ -100,28 +101,27 @@ class FullFlow:
         :param cnn_path: path to store the cnn, use this path if you want to classify using your cnn
         """
         if split_file_to_parts_amt is not None:
-            sequences_files_dir = os.path.join(sequences_files_dir, 'split')
             logging.info(f'splitting original files into dir: {sequences_files_dir}')
-            for file in glob.glob(os.path.join(sequences_files_dir, '*.fasta')):
-                self.split.split_iebdb_file(file, split_file_to_parts_amt, sequences_files_dir)
-
-        results = PoolWorkerResults()
+            files = glob.glob(os.path.join(sequences_files_dir, '*.fasta'))
+            sequences_files_dir = os.path.join(sequences_files_dir, 'split')
+            os.makedirs(sequences_files_dir, exist_ok=True)
+            for file in files:
+                sequences_files_dir = self.split.split_iebdb_file(file, split_file_to_parts_amt, sequences_files_dir)
+            logging.info('done splitting original files')
 
         with multiprocessing.Pool(total_workers) as pool:
-            for i in range(total_workers):
-                pool.apply_async(
-                    self._run_worker_flow,
-                    (
-                        sequences_files_dir, total_workers, i,
-                        window_size, oversampling_change_val_proba, oversampling_altercation_pct_min,
-                        oversampling_altercation_pct_max, preserve_files_in_process
-                    ),
-                    callback=lambda val: results.callback(i, val)
-                )
+            results = pool.starmap(
+                self._run_worker_flow,
+                [
+                    (sequences_files_dir, total_workers, worker_id,
+                     window_size, oversampling_change_val_proba, oversampling_altercation_pct_min,
+                     oversampling_altercation_pct_max, preserve_files_in_process) for worker_id in range(total_workers)
+                ]
+            )
         pool.join()  # Wait for all data to be balanced
 
         logging.info("done waiting for all worker threads to calculate features and over balance")
-        balanced_dirs = list({balanced_dir for balanced_dir in results.worker_results.values()})
+        balanced_dirs = {balanced_dir for balanced_dir in results}
 
         train_dirs = set()
         validation_dirs = set()

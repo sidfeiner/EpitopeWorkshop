@@ -9,7 +9,7 @@ import numpy as np
 
 from EpitopeWorkshop.common import conf
 
-PARTIAL_DATA_INDEX_PATTERN = re.compile(r'epitopes_(\d+)')
+PARTIAL_DATA_INDEX_PATTERN = re.compile(r'(\d+)[^\\/]+')
 
 
 def split_to_subsequences(sequence: Union[str, Seq], size: int, empty_char: str = conf.NO_AMINO_ACID_CHAR) -> List[Seq]:

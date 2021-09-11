@@ -1,11 +1,12 @@
 import glob
 import logging
+import multiprocessing
 import os
 import pickle
 import re
 
 import pandas as pd
-from EpitopeWorkshop.common import contract
+from EpitopeWorkshop.common import contract, utils
 from EpitopeWorkshop.common.conf import *
 from EpitopeWorkshop.process.balance.balance import OverSamplingBalancer
 from EpitopeWorkshop.process.balance.transform import FeatureTransformer
@@ -72,15 +73,43 @@ class OverBalancer:
             oversampling_altercation_pct_max
         )
 
-    def over_balance_dir(self, features_df_pickle_path_dir: str, total_workers: int = 1, worker_id: int = 0,
-                         oversampling_change_val_proba: float = DEFAULT_OVERSAMPLING_CHANGE_VAL_PROBA,
-                         oversampling_altercation_pct_min: int = DEFAULT_OVERSAMPLING_ALTERCATION_PCT_MIN,
-                         oversampling_altercation_pct_max: int = DEFAULT_OVERSAMPLING_ALTERCATION_PCT_MAX):
+    def _over_balance_dir(self, features_df_pickle_path_dir: str, total_workers: int = 1, worker_id: int = 0,
+                          oversampling_change_val_proba: float = DEFAULT_OVERSAMPLING_CHANGE_VAL_PROBA,
+                          oversampling_altercation_pct_min: int = DEFAULT_OVERSAMPLING_ALTERCATION_PCT_MIN,
+                          oversampling_altercation_pct_max: int = DEFAULT_OVERSAMPLING_ALTERCATION_PCT_MAX):
         logging.info(f"over balancing files in dir: {features_df_pickle_path_dir}")
-        files = glob.glob(os.path.join(features_df_pickle_path_dir, '*_features.fasta'))
+        files = glob.glob(os.path.join(features_df_pickle_path_dir, '*_features.df'))
         files = [file for file in files if
-                 int(re.search(r'_(\d+)_features', file).group(1)) % total_workers == worker_id]
+                 utils.parse_index_from_partial_data_file(file) % total_workers == worker_id]
         for file in files:
             self.over_balance_file(file, oversampling_change_val_proba, oversampling_altercation_pct_min,
                                    oversampling_altercation_pct_max)
         logging.info("done over balancing all files")
+
+    def over_balance_dir(self, features_df_pickle_path_dir: str, total_workers: int = 1,
+                         oversampling_change_val_proba: float = DEFAULT_OVERSAMPLING_CHANGE_VAL_PROBA,
+                         oversampling_altercation_pct_min: int = DEFAULT_OVERSAMPLING_ALTERCATION_PCT_MIN,
+                         oversampling_altercation_pct_max: int = DEFAULT_OVERSAMPLING_ALTERCATION_PCT_MAX):
+        """
+        :param features_df_pickle_path_dir: Directory with pickled dataframes with calculated features
+        :param total_workers: Amount of parallelization workers
+        :param oversampling_change_val_proba: Optional. A number between 0 and 1 that affects when a field should be
+                                              slightly altercated during over balance. Defaults to 0.2
+        :param oversampling_altercation_pct_min: Optional. A number in percentage that decides the lowest bound of altercation
+                                                 for a field's value during over balance.. Defaults to 97.
+        :param oversampling_altercation_pct_max: Optional. A number in percentage that decides the highest bound of altercation
+                                                 for a field's value during over balance.. Defaults to 103.
+        :return:
+        """
+        logging.info(f"setting up multiprocessing pool with {total_workers} workers")
+        with multiprocessing.Pool(total_workers) as pool:
+            results = pool.starmap(
+                self._over_balance_dir,
+                [
+                    (features_df_pickle_path_dir, total_workers, worker_id, oversampling_change_val_proba,
+                     oversampling_altercation_pct_min, oversampling_altercation_pct_max)
+                    for worker_id in range(total_workers)
+                ]
+            )
+        pool.join()
+        return set(results)

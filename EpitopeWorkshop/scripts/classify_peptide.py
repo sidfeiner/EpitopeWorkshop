@@ -63,7 +63,7 @@ class PeptideClassifier:
         figure = heat_map.get_figure()
         figure.savefig(path)
 
-    def classify_peptide(self, peptide: str, heat_map_path: Optional[str] = None):
+    def classify_peptide(self, peptide: str, heat_map_path: Optional[str] = None, cnn_path: str=PATH_TO_CNN):
         """
         :param peptide: amino acid sequence
         :param heat_map_path: If given, heat map will be saved to this location (container file-system). Be sure to
@@ -73,7 +73,7 @@ class PeptideClassifier:
         data = self._prepare_data(peptide)
 
         logging.info(f"activating trained CNN")
-        cnn = self._load_net()
+        cnn = self._load_net(cnn_path)
 
         logging.info(f"running.....")
         epitope_probas = pd.DataFrame(torch.sigmoid(cnn(data))).astype("float")

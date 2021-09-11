@@ -13,7 +13,7 @@ from EpitopeWorkshop.cnn.cnn import CNN
 from EpitopeWorkshop.cnn.train import ModelTrainer
 from EpitopeWorkshop.common import contract, plot
 from EpitopeWorkshop.common.conf import DEFAULT_BATCH_SIZE, DEFAULT_EPOCHS, DEFAULT_IS_IN_EPITOPE_THRESHOLD, \
-    DEFAULT_PRESERVE_FILES_IN_PROCESS
+    DEFAULT_PRESERVE_FILES_IN_PROCESS, DEFAULT_WEIGHT_DECAY
 from EpitopeWorkshop.dataset.EpitopeDataset import EpitopeDataset
 
 
@@ -41,11 +41,24 @@ def load_df_as_dl(path: str, batch_size: int, limit: Optional[int] = None):
 
 
 class Train:
+    """Train a CNN with all train and test files"""
     def train(self, train_files_dir: str, validation_files_dir: str, test_files_dir: str, epochs: int = DEFAULT_EPOCHS,
               persist_cnn_path: Optional[str] = None, batch_size: int = DEFAULT_BATCH_SIZE,
-              pos_weight: Optional[float] = None, preserve_files_in_process: bool = DEFAULT_PRESERVE_FILES_IN_PROCESS):
+              pos_weight: Optional[float] = None, weight_decay: Optional[float] = DEFAULT_WEIGHT_DECAY,
+              preserve_files_in_process: bool = DEFAULT_PRESERVE_FILES_IN_PROCESS):
+        """
+        :param train_files_dir: Directory with all train dataframes
+        :param validation_files_dir: Directory with all validation dataframes
+        :param test_files_dir: Directory with all test dataframes
+        :param epochs: Amount of epochs for learning
+        :param persist_cnn_path: Path to persist the cnn to when learning
+        :param batch_size: Batch size for the Data Loader - Defaults to 10
+        :param pos_weight: If given, will give a positive weight to the loss func
+        :param weight_decay: regularization parameter, defaults to 0.01
+        :param preserve_files_in_process: If False, will delete training file after it has been learned
+        """
         cnn = CNN()
-        trainer = ModelTrainer(cnn, pos_weight)
+        trainer = ModelTrainer(cnn, pos_weight, weight_decay)
 
         train_files = glob.glob(os.path.join(train_files_dir, '*.df'))
         test_files = glob.glob(os.path.join(test_files_dir, '*.df'))
@@ -55,14 +68,14 @@ class Train:
             for index, file in enumerate(train_files):
                 logging.info(f"training file ({index + 1}/{len(train_files)}) {file}")
                 random.shuffle(test_files)
-                cur_test_files = test_files[:2]
+                cur_test_files = test_files[:1]
                 dl_train, _ = load_df_as_dl(file, batch_size)
                 dls_dfs = [load_df_as_dl(test_file, batch_size) for test_file in cur_test_files]
                 dls_test = [x[0] for x in dls_dfs]
                 train_accuracy, train_loss, test_accuracies, test_losses = \
                     trainer.train(batch_size, dl_train, dls_test, epoch_amt=1)
-                plot.plot_training_data(test_accuracies, test_losses, train_accuracy, train_loss)
-                if epoch == epochs-1 and not preserve_files_in_process:
+                plot.plot_training_data(test_accuracies, test_losses, train_accuracy, train_loss, f"epoch {epoch}, weight decay {weight_decay}")
+                if epoch == epochs - 1 and not preserve_files_in_process:
                     logging.info(f"removing file {file}")
                     os.remove(file)
                 if persist_cnn_path is not None:

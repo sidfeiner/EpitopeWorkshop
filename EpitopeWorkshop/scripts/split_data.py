@@ -34,6 +34,7 @@ class AllStats:
 
 
 class ShuffleData:
+    """Shuffle data to different files for random learning"""
     def data_to_df_disk(self, path: str, tensors, labels):
         df = pd.DataFrame(
             {
@@ -47,6 +48,12 @@ class ShuffleData:
 
     def shuffle_data_dir(self, balanced_files_dir: str, max_records_per_df: int = 350000,
                          preserve_files_in_process: bool = DEFAULT_PRESERVE_FILES_IN_PROCESS):
+        """
+        :param balanced_files_dir: Directory with pickled df files
+        :param max_records_per_df: Maximum amount of records to have in the generated data files
+        :param preserve_files_in_process: If False, every handled file will be deleted
+        :return:
+        """
         files = glob.glob(os.path.join(balanced_files_dir, '*.fasta'))
         train_files = [[] for _ in range(25)]  # type: List[List[torch.FloatTensor, int]]
         validation_files = [[] for _ in range(5)]  # type: List[List[torch.FloatTensor, int]]
