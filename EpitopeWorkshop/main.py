@@ -2,6 +2,7 @@ import functools
 import glob
 import logging
 import shutil
+import time
 from typing import Optional
 
 import multiprocessing
@@ -101,6 +102,9 @@ class FullFlow:
     def run_flow(self, sequences_files_dir: str, total_workers: int = 1,
                  split_file_to_parts_amt: Optional[int] = None,
                  window_size: int = DEFAULT_WINDOW_SIZE,
+                 normalize_hydrophobicity: bool = DEFAULT_NORMALIZE_HYDROPHOBICITY,
+                 normalize_volume: bool = DEFAULT_NORMALIZE_VOLUME,
+                 normalize_surface_accessibility: bool = DEFAULT_NORMALIZE_SURFACE_ACCESSIBILITY,
                  balancing_method: str = DEFAULT_BALANCING_METHOD,
                  oversampling_change_val_proba: float = DEFAULT_OVERSAMPLING_CHANGE_VAL_PROBA,
                  oversampling_altercation_pct_min: int = DEFAULT_OVERSAMPLING_ALTERCATION_PCT_MIN,
@@ -124,6 +128,9 @@ class FullFlow:
         :param total_workers: Amount of processes to spawn for calculating and overbalancing, defaults to 1
         :param split_file_to_parts_amt: If given, will split every `.fasta` file in the dir to this amount of files
         :param window_size: Window size to analyze every protein sequence. Defaults to 9
+        :param normalize_hydrophobicity: If true, hydrophobicity values will be normalized during pre-process in CNN
+        :param normalize_volume: If true, amino acid volume values will be normalized during pre-process in CNN
+        :param normalize_surface_accessibility: If true, amino acid SA values will be normalized during pre-process in CNN
         :param balancing_method: Balancing method to use. Can be upper/under/none, defaults to under.
         :param oversampling_change_val_proba: Optional. A number between 0 and 1 that affects when a field should be
                                               slightly altercated during over balance. Defaults to 0.2
@@ -207,6 +214,7 @@ class FullFlow:
         self.trainer.train(all_train_files_dir, all_validation_files_dir, all_test_files_dir, epochs,
                            os.path.join(PATH_TO_CNN_DIR, cnn_name), batch_size,
                            batches_until_test, pos_weight, weight_decay,
+                           normalize_hydrophobicity, normalize_volume, normalize_surface_accessibility,
                            preserve_files_in_process=preserve_files_in_process)
 
 
@@ -214,4 +222,7 @@ if __name__ == '__main__':
     log_format = "%(asctime)s : %(threadName)s : %(levelname)s : %(process)d : %(module)s : %(message)s"
     log_level = os.getenv('LOG_LEVEL', 'WARN')
     logging.basicConfig(format=log_format, level=log_level)
+    start = time.time()
     fire.Fire(FullFlow)
+    delta = time.time() - start
+    print(f"run took {delta} seconds")

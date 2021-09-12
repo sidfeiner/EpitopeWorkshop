@@ -7,6 +7,8 @@ from Bio.SeqUtils.ProtParam import ProteinAnalysis
 from memoization import cached
 from quantiprot.metrics.aaindex import get_aa2volume
 from EpitopeWorkshop.common import vars, conf
+from EpitopeWorkshop.common.conf import DEFAULT_NORMALIZE_VOLUME, DEFAULT_NORMALIZE_HYDROPHOBICITY, \
+    DEFAULT_NORMALIZE_SURFACE_ACCESSIBILITY
 from EpitopeWorkshop.common.contract import *
 from EpitopeWorkshop.process.ss_predictor import SecondaryStructurePredictor
 
@@ -25,6 +27,7 @@ def add_group_type_values(d: dict) -> dict:
         new_dict[group] = sum([float(d[item]) for item in keys]) / len(keys)
     return new_dict
 
+
 def create_meta():
     base_meta = {
         HYDROPHOBICITY_COL_NAME: 'f8',
@@ -42,17 +45,31 @@ def create_meta():
 
 class FeatureCalculator:
     AA_TO_VOLUME_MAPPING = add_group_type_values(get_aa2volume().mapping)
+    VOLUME_MIN, VOLUME_MAX = min(AA_TO_VOLUME_MAPPING.values()), max(AA_TO_VOLUME_MAPPING.values())
+
     AA_TO_HYDROPHPBICITY_MAPPING = add_group_type_values(ProtParamData.kd)
-    AA_TO_POLARITY_MAPPING = add_group_type_values(vars.AMINO_ACIDS_POLARITY_MAPPING)
+    HYDROPHOBICITY_MIN, HYDROPHOBICITY_MAX = min(AA_TO_HYDROPHPBICITY_MAPPING.values()), max(
+        AA_TO_HYDROPHPBICITY_MAPPING.values())
+
     AA_TO_SURFACE_ACCESSIBILITY = add_group_type_values(ProtParamData.em)
+    SURFACE_ACCESSIBILITY_MIN, SURFACE_ACCESSIBILITY_MAX = min(AA_TO_SURFACE_ACCESSIBILITY.values()), max(
+        AA_TO_SURFACE_ACCESSIBILITY.values())
+
+    AA_TO_POLARITY_MAPPING = add_group_type_values(vars.AMINO_ACIDS_POLARITY_MAPPING)
 
     APPLY_META = create_meta()
 
-    def __init__(self, ss_prediction_min_window_size: int = 10, ss_prediction_max_window_size: int = 10,
+    def __init__(self, normalize_volume: bool = DEFAULT_NORMALIZE_VOLUME,
+                 normalize_hydrophpbicity: bool = DEFAULT_NORMALIZE_HYDROPHOBICITY,
+                 normalize_surface_accessibility: bool = DEFAULT_NORMALIZE_SURFACE_ACCESSIBILITY,
+                 ss_prediction_min_window_size: int = 10, ss_prediction_max_window_size: int = 10,
                  ss_prediction_threshold: float = conf.DEFAULT_SS_PREDICTOR_THRESHOLD):
         self.secondary_structure_predictor = SecondaryStructurePredictor(ss_prediction_min_window_size,
                                                                          ss_prediction_max_window_size,
                                                                          threshold=ss_prediction_threshold)
+        self.normalize_volume = normalize_volume
+        self.normalize_hydrophpbicity = normalize_hydrophpbicity
+        self.normalize_surface_accessibility = normalize_surface_accessibility
 
     def _key_seq_id_amino(self, row: pd.Series):
         return row[ID_COL_NAME], row[AMINO_ACID_SUBSEQ_INDEX_COL_NAME]
@@ -66,11 +83,14 @@ class FeatureCalculator:
 
     @cached
     def _calculate_computed_volume(self, aa_type: str):
-        return self.AA_TO_VOLUME_MAPPING[aa_type]
+        val = self.AA_TO_VOLUME_MAPPING[aa_type]
+        return (val - self.VOLUME_MIN) / (self.VOLUME_MAX - self.VOLUME_MIN) if not self.normalize_volume else val
 
     @cached
     def _calculate_hydrophobicity(self, aa_type: str):
-        return self.AA_TO_HYDROPHPBICITY_MAPPING[aa_type]
+        val = self.AA_TO_HYDROPHPBICITY_MAPPING[aa_type]
+        return (val - self.HYDROPHOBICITY_MIN) / (
+                self.HYDROPHOBICITY_MAX - self.HYDROPHOBICITY_MIN) if not self.normalize_hydrophpbicity else val
 
     @cached
     def _calculate_polarity(self, aa_type: str) -> float:
@@ -81,8 +101,9 @@ class FeatureCalculator:
 
     @cached
     def _calculate_surface_accessibility(self, aa_type: str):
-        """NOT GOOD ENOUGH, FIX!"""
-        return self.AA_TO_SURFACE_ACCESSIBILITY[aa_type]
+        val = self.AA_TO_SURFACE_ACCESSIBILITY[aa_type]
+        return (val - self.SURFACE_ACCESSIBILITY_MIN) / (
+                self.SURFACE_ACCESSIBILITY_MAX - self.SURFACE_ACCESSIBILITY_MIN) if not self.normalize_surface_accessibility else val
 
     def _calculate_secondary_surface(self, analyzed_seq: str, aa_index: int):
         if analyzed_seq[aa_index] == conf.NO_AMINO_ACID_CHAR:
