@@ -5,6 +5,10 @@ Our Docker image is `sfeiner/epitope-workshop`. It's entrypoint is the `main.py`
 * `docker run sfeiner/epitope-workshop run-flow --sequences-files-dir /Users/sfeiner/Documents/studies/biology/EpitopeWorkshop/data/iedb-3/ --total-workers 15 --split-file-to-parts-amt 150`
 * `docker run sfeiner/epitope-workshop classify classify-peptide --peptide XXXXXX`
 
+To set the `LOG_LEVEL` env variable, add the `-e` flag like such:
+
+```docker run -e LOG_LEVEL=DEBUG sfeiner/epitope-workshop run-flow --sequences-files-dir /Users/sfeiner/Documents/studies/biology/EpitopeWorkshop/data/iedb-3/ --total-workers 15 --split-file-to-parts-amt 150```
+
 More explanation on the exposed modules, under `Local Run`
 
 # Local Setup
@@ -41,6 +45,12 @@ Splits the data, calculates it's features, over balances, shuffles and then trai
 gets as input some sequence and returns the sequence where the uppered amino acids are the ones who have a higher
 probability of being in the epitope.
 
+If you want to see detailed logs, you can set the env variable `LOG_LEVEL` to:
+* `DEBUG`
+* `INFO`
+* `WARN`
+* `ERROR`
+
 For more explanation, run the module's name and then `--help`, for example `python main.py split --help`, or read the
 following:
 
@@ -68,10 +78,16 @@ This command combines the whole process of extracting features and building a we
 
 * `sequences_files_dir` - Directory with all fasta files that must be included in the process.
 
-This command get MANY optional arguments that affect the flow of the process. For example there are arguments for
-balancing - you can pick whether to over balance/under balance or apply no balancing. You can configure the window size,
-batch size, batches between tests, epochs, pos_weight param for the loss function, weight decay for the optimizer, and
-many more params. To find out more about them, run `python main.py run-flow --help`
+This command get MANY optional arguments that affect the flow of the process. For example:
+* normalize numerical features
+* you can over-balance (this also synthesizes new data), under-balance or apply no balancing
+* define window size 
+* batch size (for teaching the model)
+* amount of batches between test/validation evaluations
+* amount of `epochs`
+* `pos_weight` param to be passed to the loss function
+* `weight_decay` param to be passed to the optimizer
+* many more... To find out about them run `python main.py run-flow --help`
 
 ## Modules
 
