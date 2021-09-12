@@ -4,7 +4,7 @@ import math
 import os
 import pickle
 import random
-from typing import Optional
+from typing import Optional, List
 
 import torch
 import numpy as np
@@ -13,7 +13,9 @@ from EpitopeWorkshop.cnn.cnn import CNN
 from EpitopeWorkshop.cnn.train import ModelTrainer
 from EpitopeWorkshop.common import contract, plot
 from EpitopeWorkshop.common.conf import DEFAULT_BATCH_SIZE, DEFAULT_EPOCHS, DEFAULT_IS_IN_EPITOPE_THRESHOLD, \
-    DEFAULT_PRESERVE_FILES_IN_PROCESS, DEFAULT_WEIGHT_DECAY, PATH_TO_CNN_DIR, DEFAULT_BATCHES_UNTIL_TEST
+    DEFAULT_PRESERVE_FILES_IN_PROCESS, DEFAULT_WEIGHT_DECAY, PATH_TO_CNN_DIR, DEFAULT_BATCHES_UNTIL_TEST, \
+    DEFAULT_BALANCING_METHOD, DEFAULT_NORMALIZE_SURFACE_ACCESSIBILITY, DEFAULT_NORMALIZE_VOLUME, \
+    DEFAULT_NORMALIZE_HYDROPHOBICITY
 from EpitopeWorkshop.dataset.EpitopeDataset import EpitopeDataset
 
 
@@ -37,7 +39,12 @@ def load_df_as_dl(path: str, batch_size: int, limit: Optional[int] = None):
         df[contract.IS_IN_EPITOPE_COL_NAME]
     )
     return torch.utils.data.DataLoader(ds, batch_size=batch_size,
-                                       shuffle=True, num_workers=0), df
+                                       shuffle=True, num_workers=0, drop_last=True), df
+
+
+def load_many_dfs_as_dls(files: List[str], batch_size: int = DEFAULT_BATCH_SIZE):
+    dls_dfs = (load_df_as_dl(file, batch_size) for file in files)
+    return (x[0] for x in dls_dfs)
 
 
 class Train:
@@ -47,6 +54,9 @@ class Train:
               persist_cnn_path: Optional[str] = None, batch_size: int = DEFAULT_BATCH_SIZE,
               batches_until_test: int = DEFAULT_BATCHES_UNTIL_TEST,
               pos_weight: Optional[float] = None, weight_decay: Optional[float] = DEFAULT_WEIGHT_DECAY,
+              normalize_hydrophobicity: bool = DEFAULT_NORMALIZE_HYDROPHOBICITY,
+              normalize_volume: bool = DEFAULT_NORMALIZE_VOLUME,
+              normalize_surface_accessibility: bool = DEFAULT_NORMALIZE_SURFACE_ACCESSIBILITY,
               preserve_files_in_process: bool = DEFAULT_PRESERVE_FILES_IN_PROCESS):
         """
         :param train_files_dir: Directory with all train dataframes
@@ -58,31 +68,39 @@ class Train:
         :param batches_until_test: Batches to learn between testing
         :param pos_weight: If given, will give a positive weight to the loss func
         :param weight_decay: regularization parameter, defaults to 0.01
+        :param normalize_hydrophobicity: If true, hydrophobicity values will be normalized during pre-process in CNN
+        :param normalize_volume: If true, amino acid volume values will be normalized during pre-process in CNN
+        :param normalize_surface_accessibility: If true, amino acid SA values will be normalized during pre-process in CNN
         :param preserve_files_in_process: If False, will delete training file after it has been learned
         """
-        cnn = CNN()
+        cnn = CNN(normalize_hydrophobicity, normalize_volume, normalize_surface_accessibility)
         trainer = ModelTrainer(cnn, pos_weight, weight_decay)
 
         train_files = glob.glob(os.path.join(train_files_dir, '*.df'))
         test_files = glob.glob(os.path.join(test_files_dir, '*.df'))
-        all_epochs_train_accuracy, all_epochs_train_loss, all_epochs_test_accuracy, all_epochs_test_loss = [], [], [], []
+        validation_files = glob.glob(os.path.join(validation_files_dir, '*.df'))
+        all_epochs_train_accuracy, all_epochs_train_loss, all_epochs_validation_acccuracy, all_epochs_validation_loss, \
+        all_epochs_test_accuracy, all_epochs_test_loss = [], [], [], [], [], []
         for epoch in range(epochs):
-            per_epoch_train_accuracy, per_epoch_train_loss, per_epoch_test_accuracy, per_epoch_test_loss = [], [], [], []
+            per_epoch_train_accuracy, per_epoch_train_loss, per_epoch_validation_accuracy, per_epoch_validation_loss, per_epoch_test_accuracy, per_epoch_test_loss = \
+                [], [], [], [], [], []
             logging.info(f"running on all train data, epoch {epoch}")
             random.shuffle(train_files)
             for index, file in enumerate(train_files):
                 logging.info(f"training file ({index + 1}/{len(train_files)}) {file}")
                 random.shuffle(test_files)
-                cur_test_files = test_files
                 dl_train, _ = load_df_as_dl(file, batch_size)
-                dls_dfs = [load_df_as_dl(test_file, batch_size) for test_file in cur_test_files]
-                dls_test = [x[0] for x in dls_dfs]
-                train_accuracy, train_loss, test_accuracies, test_losses = \
-                    trainer.train(batch_size, dl_train, dls_test, batches_until_test, epoch_amt=1)
-                plot.plot_training_data(test_accuracies, test_losses, train_accuracy, train_loss,
+                dls_test = lambda: load_many_dfs_as_dls(test_files, batch_size)
+                dls_validation = lambda: load_many_dfs_as_dls(validation_files, batch_size)
+                train_accuracies, train_losses, validation_accuracies, validation_losses, test_accuracies, test_losses = \
+                    trainer.train(batch_size, dl_train, dls_test, dls_validation, batches_until_test, epoch_amt=1)
+                plot.plot_training_data(test_accuracies, test_losses, train_accuracies, validation_accuracies,
+                                        validation_losses, train_losses,
                                         f"epoch {epoch} file_index {index}, weight decay {weight_decay}")
-                per_epoch_train_accuracy.extend(train_accuracy)
-                per_epoch_train_loss.extend(train_loss)
+                per_epoch_train_accuracy.extend(train_accuracies)
+                per_epoch_train_loss.extend(train_losses)
+                per_epoch_validation_accuracy.extend(validation_accuracies)
+                per_epoch_validation_loss.extend(validation_losses)
                 per_epoch_test_accuracy.extend(test_accuracies)
                 per_epoch_test_loss.extend(test_losses)
                 if epoch == epochs - 1 and not preserve_files_in_process:
@@ -93,16 +111,19 @@ class Train:
                     final_path = os.path.join(dir_name, f"{epoch}-{basename}")
                     logging.info(f"persisting cnn (for epoch {epoch}) to disk to {final_path}")
                     cnn.to_pth(final_path)
-            plot.plot_training_data(per_epoch_train_accuracy, per_epoch_test_loss, per_epoch_train_accuracy,
-                                    per_epoch_train_loss,
+            plot.plot_training_data(per_epoch_train_accuracy, per_epoch_test_loss, per_epoch_validation_accuracy,
+                                    per_epoch_validation_loss, per_epoch_train_accuracy, per_epoch_train_loss,
                                     f"summarize epoch {epoch}, weight decay {weight_decay}")
             all_epochs_train_accuracy.extend(per_epoch_train_accuracy)
             all_epochs_train_loss.extend(per_epoch_train_loss)
+            all_epochs_validation_acccuracy.extend(per_epoch_validation_accuracy)
+            all_epochs_validation_loss.extend(per_epoch_validation_accuracy)
             all_epochs_test_accuracy.extend(per_epoch_test_accuracy)
             all_epochs_test_loss.extend(per_epoch_test_loss)
 
         plot.plot_training_data(
             all_epochs_train_accuracy, all_epochs_test_loss,
+            all_epochs_validation_acccuracy, all_epochs_validation_loss,
             all_epochs_train_accuracy, all_epochs_train_loss,
             f"summarize all {epochs} epochs, weight decay {weight_decay}"
         )

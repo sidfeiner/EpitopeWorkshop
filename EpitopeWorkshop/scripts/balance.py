@@ -1,9 +1,7 @@
 import glob
 import logging
 import multiprocessing
-import os
 import pickle
-import re
 
 import pandas as pd
 from EpitopeWorkshop.common import contract, utils
