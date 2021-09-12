@@ -65,7 +65,9 @@ class Train:
 
         train_files = glob.glob(os.path.join(train_files_dir, '*.df'))
         test_files = glob.glob(os.path.join(test_files_dir, '*.df'))
+        all_epochs_train_accuracy, all_epochs_train_loss, all_epochs_test_accuracy, all_epochs_test_loss = [], [], [], []
         for epoch in range(epochs):
+            per_epoch_train_accuracy, per_epoch_train_loss, per_epoch_test_accuracy, per_epoch_test_loss = [], [], [], []
             logging.info(f"running on all train data, epoch {epoch}")
             random.shuffle(train_files)
             for index, file in enumerate(train_files):
@@ -78,7 +80,11 @@ class Train:
                 train_accuracy, train_loss, test_accuracies, test_losses = \
                     trainer.train(batch_size, dl_train, dls_test, batches_until_test, epoch_amt=1)
                 plot.plot_training_data(test_accuracies, test_losses, train_accuracy, train_loss,
-                                        f"epoch {epoch}, weight decay {weight_decay}")
+                                        f"epoch {epoch} file_index {index}, weight decay {weight_decay}")
+                per_epoch_train_accuracy.extend(train_accuracy)
+                per_epoch_train_loss.extend(train_loss)
+                per_epoch_test_accuracy.extend(test_accuracies)
+                per_epoch_test_loss.extend(test_losses)
                 if epoch == epochs - 1 and not preserve_files_in_process:
                     logging.info(f"removing file {file}")
                     os.remove(file)
@@ -87,7 +93,19 @@ class Train:
                     final_path = os.path.join(dir_name, f"{epoch}-{basename}")
                     logging.info(f"persisting cnn (for epoch {epoch}) to disk to {final_path}")
                     cnn.to_pth(final_path)
+            plot.plot_training_data(per_epoch_train_accuracy, per_epoch_test_loss, per_epoch_train_accuracy,
+                                    per_epoch_train_loss,
+                                    f"summarize epoch {epoch}, weight decay {weight_decay}")
+            all_epochs_train_accuracy.extend(per_epoch_train_accuracy)
+            all_epochs_train_loss.extend(per_epoch_train_loss)
+            all_epochs_test_accuracy.extend(per_epoch_test_accuracy)
+            all_epochs_test_loss.extend(per_epoch_test_loss)
 
+        plot.plot_training_data(
+            all_epochs_train_accuracy, all_epochs_test_loss,
+            all_epochs_train_accuracy, all_epochs_train_loss,
+            f"summarize all {epochs} epochs, weight decay {weight_decay}"
+        )
         logging.info("done training cnn")
 
     def test_trained_model(self, cnn_name: str, test_files_dir: str, batch_size: int = DEFAULT_BATCH_SIZE,

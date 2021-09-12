@@ -22,7 +22,7 @@ class ModelTrainer:
 
     def train_model(self, dl_train: data.Dataset, epoch_amt: int = DEFAULT_EPOCHS):
         for epoch in range(epoch_amt):  # loop over the dataset multiple times
-            logging.info(f"running for epoch {epoch + 1}")
+            logging.info(f"running for epoch {epoch + 1}/{epoch_amt}")
             running_loss = 0.0
             for i, data in enumerate(dl_train):
                 # get the inputs; data is a list of [inputs, labels]
