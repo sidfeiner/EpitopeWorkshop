@@ -81,7 +81,7 @@ class FullFlow:
     def _move_files_in_dir_to_dir(self, src_dir: str, dst_dir: str):
         files = glob.glob(os.path.join(src_dir, '*'))
         for file in files:
-            shutil.move(file, dst_dir)
+            shutil.move(file, os.path.join(dst_dir, os.path.basename(file)))
 
     def list_cnns(self):
         """List all trained CNN models that exist and can be referenced in our modules"""
@@ -106,13 +106,14 @@ class FullFlow:
                  oversampling_altercation_pct_min: int = DEFAULT_OVERSAMPLING_ALTERCATION_PCT_MIN,
                  oversampling_altercation_pct_max: int = DEFAULT_OVERSAMPLING_ALTERCATION_PCT_MAX,
                  preserve_files_in_process: bool = DEFAULT_PRESERVE_FILES_IN_PROCESS,
+                 concurrent_train_files_amt: int = DEFAULT_CONCURRENT_TRAIN_FILES_AMT,
                  batch_size: int = DEFAULT_BATCH_SIZE,
                  batches_until_test: int = DEFAULT_BATCHES_UNTIL_TEST,
                  max_records_in_final_df: int = DEFAULT_RECORDS_IN_FINAL_DF,
                  epochs: int = DEFAULT_EPOCHS,
                  pos_weight: float = DEFAULT_POS_WEIGHT,
                  weight_decay: float = DEFAULT_WEIGHT_DECAY,
-                 cnn_name: str = PATH_TO_USER_CNN
+                 cnn_name: str = USER_CNN_NAME
                  ):
         """
         This is the main entry point for learning.
@@ -132,6 +133,8 @@ class FullFlow:
                                                  for a field's value during over balance.. Defaults to 103.
         :param preserve_files_in_process: If true, all files created during the process will be deleted when they're not
                                           needed anymore.
+        :param concurrent_train_files_amt: Amount of concurrent train files to randomly shuffle the data.
+                                           This amount sets the amount of concurrent validation/test files.
         :param batch_size: batch size when the CNN learns
         :param batches_until_test: Batches to learn between testing
         :param epochs: epochs to run the data
@@ -140,7 +143,7 @@ class FullFlow:
         :param cnn_name: name of the cnn, use this name if you want to classify using your cnn
         """
         assert balancing_method in (
-            vars.BALANCING_METHOD_UNDER, vars.BALANCING_METHOD_OVER, vars.BALANCING_METHOD_UNDER)
+            vars.BALANCING_METHOD_NONE, vars.BALANCING_METHOD_OVER, vars.BALANCING_METHOD_UNDER)
         if split_file_to_parts_amt is not None:
             logging.info(f'splitting original files into dir: {sequences_files_dir}')
             files = glob.glob(os.path.join(sequences_files_dir, '*.fasta'))
@@ -176,7 +179,8 @@ class FullFlow:
             train_dir, validation_dir, test_dir = self.shuffler.shuffle_data_dir(
                 balanced_dir,
                 max_records_in_final_df,
-                preserve_files_in_process
+                preserve_files_in_process,
+                concurrent_train_files_amt
             )
             train_dirs.add(train_dir)
             validation_dirs.add(validation_dir)

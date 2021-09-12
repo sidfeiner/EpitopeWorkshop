@@ -1,5 +1,6 @@
 import glob
 import logging
+import math
 import os
 import random
 from typing import List
@@ -8,7 +9,8 @@ import pandas as pd
 import torch
 
 from EpitopeWorkshop.common import contract, conf
-from EpitopeWorkshop.common.conf import DEFAULT_PRESERVE_FILES_IN_PROCESS, DEFAULT_RECORDS_IN_FINAL_DF
+from EpitopeWorkshop.common.conf import DEFAULT_PRESERVE_FILES_IN_PROCESS, DEFAULT_RECORDS_IN_FINAL_DF, \
+    DEFAULT_CONCURRENT_TRAIN_FILES_AMT
 
 
 class FileStats:
@@ -48,17 +50,24 @@ class ShuffleData:
         return df
 
     def shuffle_data_dir(self, balanced_files_dir: str, max_records_per_df: int = DEFAULT_RECORDS_IN_FINAL_DF,
-                         preserve_files_in_process: bool = DEFAULT_PRESERVE_FILES_IN_PROCESS):
+                         preserve_files_in_process: bool = DEFAULT_PRESERVE_FILES_IN_PROCESS,
+                         concurrent_train_files_amt: int = DEFAULT_CONCURRENT_TRAIN_FILES_AMT):
         """
         :param balanced_files_dir: Directory with pickled df files
         :param max_records_per_df: Maximum amount of records to have in the generated data files
         :param preserve_files_in_process: If False, every handled file will be deleted
+        :param concurrent_train_files_amt: Amount of concurrent train files to randomly shuffle the data.
+                                           This amount sets the amount of concurrent validation/test files.
         :return:
         """
+        total_files = int(max(3, concurrent_train_files_amt // conf.DEFAULT_TRAIN_DATA_PCT))
+        concurrent_validation_files_amt = math.floor(max(1, total_files * conf.DEFAULT_VALID_DATA_PCT))
+        concurrent_test_files_amt = math.floor(max(1, total_files * conf.DEFAULT_TEST_DATA_PCT))
         files = glob.glob(os.path.join(balanced_files_dir, '*.fasta'))
-        train_files = [[] for _ in range(25)]  # type: List[List[torch.FloatTensor, int]]
-        validation_files = [[] for _ in range(5)]  # type: List[List[torch.FloatTensor, int]]
-        test_files = [[] for _ in range(10)]  # type: List[List[torch.FloatTensor, int]]
+        train_files = [[] for _ in range(concurrent_train_files_amt)]  # type: List[List[torch.FloatTensor, int]]
+        validation_files = [[] for _ in
+                            range(concurrent_validation_files_amt)]  # type: List[List[torch.FloatTensor, int]]
+        test_files = [[] for _ in range(concurrent_test_files_amt)]  # type: List[List[torch.FloatTensor, int]]
 
         train_files_dir = os.path.join(balanced_files_dir, 'train-files')
         validation_files_dir = os.path.join(balanced_files_dir, 'validation-files')
