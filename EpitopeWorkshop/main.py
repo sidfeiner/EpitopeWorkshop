@@ -39,6 +39,7 @@ class FullFlow:
     def _run_worker_flow(self, sequences_files_dir: str, total_workers: int, worker_id: int,
                          window_size: int = DEFAULT_WINDOW_SIZE,
                          balancing_method: str = DEFAULT_BALANCING_METHOD,
+                         balancing_positive_freq: float = DEFAULT_BALANCING_POSITIVE_FREQ,
                          oversampling_change_val_proba: float = DEFAULT_OVERSAMPLING_CHANGE_VAL_PROBA,
                          oversampling_altercation_pct_min: int = DEFAULT_OVERSAMPLING_ALTERCATION_PCT_MIN,
                          oversampling_altercation_pct_max: int = DEFAULT_OVERSAMPLING_ALTERCATION_PCT_MAX,
@@ -115,6 +116,7 @@ class FullFlow:
                  normalize_volume: bool = DEFAULT_NORMALIZE_VOLUME,
                  normalize_surface_accessibility: bool = DEFAULT_NORMALIZE_SURFACE_ACCESSIBILITY,
                  balancing_method: str = DEFAULT_BALANCING_METHOD,
+                 balancing_positive_freq: float = DEFAULT_BALANCING_POSITIVE_FREQ,
                  oversampling_change_val_proba: float = DEFAULT_OVERSAMPLING_CHANGE_VAL_PROBA,
                  oversampling_altercation_pct_min: int = DEFAULT_OVERSAMPLING_ALTERCATION_PCT_MIN,
                  oversampling_altercation_pct_max: int = DEFAULT_OVERSAMPLING_ALTERCATION_PCT_MAX,
@@ -140,7 +142,8 @@ class FullFlow:
         :param normalize_hydrophobicity: If true, hydrophobicity values will be normalized during pre-process in CNN
         :param normalize_volume: If true, amino acid volume values will be normalized during pre-process in CNN
         :param normalize_surface_accessibility: If true, amino acid SA values will be normalized during pre-process in CNN
-        :param balancing_method: Balancing method to use. Can be upper/under/none, defaults to under.
+        :param balancing_method: Balancing method to use. Can be upper/under/none, defaults to under
+        :param balancing_positive_freq: Number between 0 and 1. This will be the frequency of positive labels in our dataset after balancing
         :param oversampling_change_val_proba: Optional. A number between 0 and 1 that affects when a field should be
                                               slightly altercated during over balance. Defaults to 0.2
         :param oversampling_altercation_pct_min: Optional. A number in percentage that decides the lowest bound of altercation
@@ -159,7 +162,9 @@ class FullFlow:
         :param threshold: Threshold that decides if if an amino acid is part of the epitope
         """
         assert balancing_method in (
-            vars.BALANCING_METHOD_NONE, vars.BALANCING_METHOD_OVER, vars.BALANCING_METHOD_UNDER)
+            vars.BALANCING_METHOD_NONE, vars.BALANCING_METHOD_OVER, vars.BALANCING_METHOD_UNDER
+        )
+        assert 0 < balancing_positive_freq < 1
         if split_file_to_parts_amt is not None:
             logging.info(f'splitting original files into dir: {sequences_files_dir}')
             files = glob.glob(os.path.join(sequences_files_dir, '*.fasta'))
@@ -175,7 +180,8 @@ class FullFlow:
                 self._run_worker_flow,
                 [
                     (sequences_files_dir, total_workers, worker_id, window_size,
-                     balancing_method, oversampling_change_val_proba, oversampling_altercation_pct_min,
+                     balancing_method, balancing_positive_freq, oversampling_change_val_proba,
+                     oversampling_altercation_pct_min,
                      oversampling_altercation_pct_max, preserve_files_in_process) for worker_id in
                     range(total_workers)
                 ]

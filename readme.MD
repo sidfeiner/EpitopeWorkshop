@@ -135,6 +135,7 @@ This command get MANY optional arguments that affect the flow of the process. Fo
 
 * normalize numerical features
 * you can over-balance (this also synthesizes new data), under-balance or apply no balancing
+* define balance ratio (how much positive/negative values)
 * define window size
 * batch size (for teaching the model)
 * amount of `epochs`

@@ -23,6 +23,7 @@ class OverBalancer:
     """
 
     def over_balance_df(self, df: pd.DataFrame, final_path: str,
+                        balancing_positive_freq: float = DEFAULT_BALANCING_POSITIVE_FREQ,
                         oversampling_change_val_proba: float = DEFAULT_OVERSAMPLING_CHANGE_VAL_PROBA,
                         oversampling_altercation_pct_min: int = DEFAULT_OVERSAMPLING_ALTERCATION_PCT_MIN,
                         oversampling_altercation_pct_max: int = DEFAULT_OVERSAMPLING_ALTERCATION_PCT_MAX):
@@ -35,8 +36,8 @@ class OverBalancer:
             contract.IS_IN_EPITOPE_COL_NAME,
             [(contract.CALCULATED_FEATURES_COL_NAME, feature_transformer.transform)],
             balances={
-                0: 0.5,
-                1: 0.5
+                0: 1 - balancing_positive_freq,
+                1: balancing_positive_freq
             }
         )
 
@@ -54,6 +55,7 @@ class OverBalancer:
         return final_path, df
 
     def over_balance_file(self, features_df_pickle_path: str,
+                          balancing_positive_freq: float = DEFAULT_BALANCING_POSITIVE_FREQ,
                           oversampling_change_val_proba: float = DEFAULT_OVERSAMPLING_CHANGE_VAL_PROBA,
                           oversampling_altercation_pct_min: int = DEFAULT_OVERSAMPLING_ALTERCATION_PCT_MIN,
                           oversampling_altercation_pct_max: int = DEFAULT_OVERSAMPLING_ALTERCATION_PCT_MAX):
@@ -66,11 +68,12 @@ class OverBalancer:
         os.makedirs(balanced_dir, exist_ok=True)
         return self.over_balance_df(
             df, os.path.join(balanced_dir, f"{name}_balanced{ext}"),
-            oversampling_change_val_proba, oversampling_altercation_pct_min,
+            balancing_positive_freq, oversampling_change_val_proba, oversampling_altercation_pct_min,
             oversampling_altercation_pct_max
         )
 
     def _over_balance_dir(self, features_df_pickle_path_dir: str, total_workers: int = 1, worker_id: int = 0,
+                          balancing_positive_freq: float = DEFAULT_BALANCING_POSITIVE_FREQ,
                           oversampling_change_val_proba: float = DEFAULT_OVERSAMPLING_CHANGE_VAL_PROBA,
                           oversampling_altercation_pct_min: int = DEFAULT_OVERSAMPLING_ALTERCATION_PCT_MIN,
                           oversampling_altercation_pct_max: int = DEFAULT_OVERSAMPLING_ALTERCATION_PCT_MAX):
@@ -80,7 +83,7 @@ class OverBalancer:
                  utils.parse_index_from_partial_data_file(file) % total_workers == worker_id]
         over_balanced_files = []
         for file in files:
-            over_balanced_path, _ = self.over_balance_file(file, oversampling_change_val_proba,
+            over_balanced_path, _ = self.over_balance_file(file, balancing_positive_freq, oversampling_change_val_proba,
                                                            oversampling_altercation_pct_min,
                                                            oversampling_altercation_pct_max)
             over_balanced_files.append(over_balanced_path)
@@ -89,12 +92,14 @@ class OverBalancer:
         return over_balanced_files
 
     def over_balance_dir(self, features_df_pickle_path_dir: str, total_workers: int = 1,
+                         balancing_positive_freq: float = DEFAULT_BALANCING_POSITIVE_FREQ,
                          oversampling_change_val_proba: float = DEFAULT_OVERSAMPLING_CHANGE_VAL_PROBA,
                          oversampling_altercation_pct_min: int = DEFAULT_OVERSAMPLING_ALTERCATION_PCT_MIN,
                          oversampling_altercation_pct_max: int = DEFAULT_OVERSAMPLING_ALTERCATION_PCT_MAX):
         """
         :param features_df_pickle_path_dir: Directory with pickled dataframes with calculated features
         :param total_workers: Amount of parallelization workers
+        :param balancing_positive_freq: Number between 0 and 1. This will be the frequency of positive labels in our dataset after balancing
         :param oversampling_change_val_proba: Optional. A number between 0 and 1 that affects when a field should be
                                               slightly altercated during over balance. Defaults to 0.2
         :param oversampling_altercation_pct_min: Optional. A number in percentage that decides the lowest bound of altercation
@@ -108,7 +113,8 @@ class OverBalancer:
             results = pool.starmap(
                 self._over_balance_dir,
                 [
-                    (features_df_pickle_path_dir, total_workers, worker_id, oversampling_change_val_proba,
+                    (features_df_pickle_path_dir, total_workers, worker_id, balancing_positive_freq,
+                     oversampling_change_val_proba,
                      oversampling_altercation_pct_min, oversampling_altercation_pct_max)
                     for worker_id in range(total_workers)
                 ]
