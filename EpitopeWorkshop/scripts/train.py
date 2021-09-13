@@ -75,7 +75,7 @@ class Train:
         cnn = CNN(normalize_hydrophobicity, normalize_volume, normalize_surface_accessibility)
         trainer = ModelTrainer(cnn, pos_weight, weight_decay)
 
-        train_files = glob.glob(os.path.join(train_files_dir, '*.df'))
+        train_files = glob.glob(os.path.join(train_files_dir, '*.df'))[:35]
         test_files = glob.glob(os.path.join(test_files_dir, '*.df'))
         validation_files = glob.glob(os.path.join(validation_files_dir, '*.df'))
         all_epochs_train_accuracy, all_epochs_train_loss, all_epochs_validation_acccuracy, all_epochs_validation_loss, \
@@ -97,12 +97,12 @@ class Train:
                     logging.info(f"removing file {file}")
                     os.remove(file)
                 if cnn_name is not None:
-                    final_path = os.path.join(conf.PATH_TO_USER_CNN_DIR, f"{epoch}-{cnn_name}")
+                    final_path = os.path.join(conf.PATH_TO_USER_CNN_DIR , f"{epoch}-{cnn_name}")
                     logging.info(f"persisting cnn (for epoch {epoch}) to disk to {final_path}")
                     cnn.to_pth(final_path)
 
-            dls_test = lambda: load_many_dfs_as_dls(test_files, batch_size)
-            dls_validation = lambda: load_many_dfs_as_dls(validation_files, batch_size)
+            dls_test = lambda: load_many_dfs_as_dls(test_files[:5], batch_size)
+            dls_validation = lambda: load_many_dfs_as_dls(validation_files[:3], batch_size)
 
             logging.debug(f"running cnn on test")
             dls_test_len, test_total_loss, test_total_acc = trainer.get_loss_and_accuracy(dls_test, threshold)

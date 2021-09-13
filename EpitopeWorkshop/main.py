@@ -92,9 +92,10 @@ class FullFlow:
 
     def list_cnns(self):
         """List all trained CNN models that exist and can be referenced in our modules"""
-        paths = glob.glob(os.path.join(PATH_TO_CNN_DIR, '*'))
-        for path in paths:
-            print(f"* {os.path.basename(path)}")
+        for cnn_dir in {PATH_TO_CNN_DIR, PATH_TO_USER_CNN_DIR}:
+            paths = glob.glob(os.path.join(cnn_dir, '*'))
+            for path in paths:
+                print(f"* {os.path.basename(path)}")
 
     def classify(self, sequence: str, heat_map_name: Optional[str] = None, print_proba: bool = DEFAULT_PRINT_PROBA,
                  print_precision: int = DEFAULT_PRINT_PRECISION, cnn_name: str = CNN_NAME):

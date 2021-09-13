@@ -1,6 +1,6 @@
 # Docker execution
 
-Our Docker image is `sfeiner/epitope-workshop`. It's entrypoint is the `main.py` file. For some of the modules, it's
+Our Docker image is `sfeiner/epitope-workshop:latest`. It's entrypoint is the `main.py` file. For some of the modules, it's
 important to set up a mount between your local file system and the Docker container (for example if you would like to
 load a cnn of yours, if you want access to the generated heat maps or plots, and if you would like to run the whole
 learning flow based on fasta files on your local file system).
@@ -15,15 +15,15 @@ will see the following sub-directories:
 
 Example when no mount is needed:
 
-`docker run sfeiner/epitope-workshop classify --sequence XXXXXX`
+`docker run sfeiner/epitope-workshop:latest classify --sequence XXXXXX`
 
 Examples when a mount is needed:
-* `docker run --volume /path/to/local/dir:/workshop/mnt/data:rw sfeiner/epitope-workshop run-flow --sequences-files-dir /workshop/mnt/data/iedb-3/ --total-workers 15 --split-file-to-parts-amt 150`
-* `docker run --volume /path/to/local/dir:/workshop/mnt/data:rw sfeiner/epitope-workshop classify --sequence XXXXXX --heat-map-name result-heat`
+* `docker run --volume /path/to/local/dir:/workshop/mnt/data:rw sfeiner/epitope-workshop:latest run-flow --sequences-files-dir /workshop/mnt/data/iedb-3/ --total-workers 15 --split-file-to-parts-amt 150`
+* `docker run --volume /path/to/local/dir:/workshop/mnt/data:rw sfeiner/epitope-workshop:latest classify --sequence XXXXXX --heat-map-name result-heat`
 
 To set the `LOG_LEVEL` env variable, add the `-e` flag like such:
 
-```docker run -e LOG_LEVEL=DEBUG sfeiner/epitope-workshop classify --sequence XXXXXX```
+```docker run -e LOG_LEVEL=DEBUG sfeiner/epitope-workshop:latest classify --sequence XXXXXX```
 
 Example flow:
 Create the directory `/path/to/user/data`, create a folder `iedb-mini` in it and put some fasta sequence in it, 
@@ -115,7 +115,7 @@ This command has 3 arguments:
   cnn's output.
 * `print-precision` - Defaults to 3 and will affect the precision of the probabilities of the amino acids ONLY when
   printing.
-* `cnn-name` - Optional. If given, this cnn will be used to classify the sequence
+* `cnn-name` - Optional. If given, this cnn will be used to classify the sequence. Otherwise, default CNN will be used (the one created during the workshop)
 
 Example: `python main.py classify --sequence mntlllPKPKKDETIQCCTKNNcnr`
 
@@ -164,6 +164,34 @@ example, to get help for the `features` modules, run `python main.py features --
 The same can be done for a command, for example: `python main.py features calculate-features --help`:
 
 ![module help](imgs/command-help.png)
+
+### Params
+All definable params:
+* `sequences_files_dir`: Directory with fasta files (only `.fasta` files will be handled)
+* `total_workers`: Amount of processes to spawn for calculating and overbalancing, defaults to 1
+* `split_file_to_parts_amt`: If given, will split every `.fasta` file in the dir to this amount of files
+* `window_size`: Window size to analyze every protein sequence. Defaults to 9
+* `normalize_hydrophobicity`: If true, hydrophobicity values will be normalized during pre-process in CNN
+* `normalize_volume`: If true, amino acid volume values will be normalized during pre-process in CNN
+* `normalize_surface_accessibility`: If true, amino acid SA values will be normalized during pre-process in CNN
+* `balancing_method`: Balancing method to use. Can be upper/under/none, defaults to under
+* `balancing_positive_freq`: Number between 0 and 1. This will be the frequency of positive labels in our dataset after balancing
+* `oversampling_change_val_proba`: Optional. A number between 0 and 1 that affects when a field should be
+                                      slightly altercated during over balance. Defaults to 0.2
+* `oversampling_altercation_pct_min`: Optional. A number in percentage that decides the lowest bound of altercation
+                                         for a field's value during over balance.. Defaults to 97.
+* `oversampling_altercation_pct_max`: Optional. A number in percentage that decides the highest bound of altercation
+                                         for a field's value during over balance.. Defaults to 103.
+* `preserve_files_in_process`: If true, all files created during the process will be deleted when they're not
+                                  needed anymore.
+* `concurrent_train_files_amt`: Amount of concurrent train files to randomly shuffle the data.
+                                   This amount sets the amount of concurrent validation/test files.
+* `batch_size`: batch size when the CNN learns
+* `epochs`: epochs to run the data
+* `pos_weight`: If given, will give a positive weight to the loss func
+* `weight_decay`: regularization parameter, defaults to 0.01
+* `cnn_name`: name of the cnn, use this name if you want to classify using your cnn
+* `threshold`: Threshold that decides if if an amino acid is part of the epitope
 
 # Maintain
 
