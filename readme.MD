@@ -18,12 +18,44 @@ Example when no mount is needed:
 `docker run sfeiner/epitope-workshop classify --sequence XXXXXX`
 
 Examples when a mount is needed:
-* `docker run --volume /path/to/local/dir:/workshop/mnt/data:rw sfeiner/epitope-workshop run-flow --sequences-files-dir /Users/sfeiner/Documents/studies/biology/EpitopeWorkshop/data/iedb-3/ --total-workers 15 --split-file-to-parts-amt 150`
+* `docker run --volume /path/to/local/dir:/workshop/mnt/data:rw sfeiner/epitope-workshop run-flow --sequences-files-dir /workshop/mnt/data/iedb-3/ --total-workers 15 --split-file-to-parts-amt 150`
 * `docker run --volume /path/to/local/dir:/workshop/mnt/data:rw sfeiner/epitope-workshop classify --sequence XXXXXX --heat-map-name result-heat`
 
 To set the `LOG_LEVEL` env variable, add the `-e` flag like such:
 
-```docker run -e LOG_LEVEL=DEBUG sfeiner/epitope-workshop run-flow --sequences-files-dir /Users/sfeiner/Documents/studies/biology/EpitopeWorkshop/data/iedb-3/ --total-workers 15 --split-file-to-parts-amt 150```
+```docker run -e LOG_LEVEL=DEBUG sfeiner/epitope-workshop classify --sequence XXXXXX```
+
+Example flow:
+Create the directory `/path/to/user/data`, create a folder `iedb-mini` in it and put some fasta sequence in it, 
+called `iedb_linear_epitopes.fasta`. Then run the following:
+
+```
+docker run -e LOG_LEVEL=DEBUG ֿ
+--volume /path/to/user/data:/workshop/mnt/data:rw \
+workshop run-flow \
+--sequences-files-dir /workshop/mnt/data/iedb-mini \
+--total-workers 5 \
+--split-file-to-parts-amt 5
+```
+![Start of flow](./imgs/flow-run-start.png)
+And after the process end, you will see some new files:
+* under `plots` you will see a graph showing the progress of the training process
+* under `cnn-models` you will see a snapshot of the cnn model for every epoch, so you can pick the one you prefer based 
+on the data from the generated plot
+  
+![End of flow](imgs/files-after-train.png)
+  
+Now you can even use this generated CNN file to classify a new protein sequence:
+```
+docker run -e LOG_LEVEL=DEBUG \
+--volume /path/to/user/data:/workshop/mnt/data:rw workshop classify \
+--sequence menlnmdllymaaavmmglaaigaaigigilgGKFLEGAarqpdlipllrtqffivmglvdaipmiavglglyvmfava \
+--heat-map-name my-map
+```
+You will see the predicted sequence on the screen, and additionally see a generated heat map in our data directory:
+
+![Final directory](imgs/heat-map.png)
+
 
 More explanation on the exposed modules, under `Local Run`
 
@@ -123,7 +155,14 @@ The modules we expose are
 * `train`
 
 To find out more about them, run `python main.py <MODULE> --help`. Those are the modules that `run-flow` uses behind the
-scenes so in the average use-case, you will only use `run-flow` and you won't need to use the individual modules.
+scenes so in the average use-case, you will only use `run-flow` and you won't need to use the individual modules. For 
+example, to get help for the `features` modules, run `python main.py features --help`:
+
+![module help](imgs/module-help.png)
+
+The same can be done for a command, for example: `python main.py features calculate-features --help`:
+
+![module help](imgs/command-help.png)
 
 # Maintain
 

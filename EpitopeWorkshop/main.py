@@ -81,7 +81,7 @@ class FullFlow:
             balance_func(df, balanced_df_path)
             if not preserve_files_in_process:
                 os.remove(file_name)  # Delete file that the df is based on (the one with the calculated features)
-        logging.info(f"worker {worker_id} finished calculating features and over balancing files")
+        logging.info(f"worker {worker_id} finished calculating features and balancing files")
         return {balanced_dir}
 
     def _move_files_in_dir_to_dir(self, src_dir: str, dst_dir: str):

@@ -97,7 +97,7 @@ class Train:
                     logging.info(f"removing file {file}")
                     os.remove(file)
                 if cnn_name is not None:
-                    final_path = os.path.join(conf.PATH_TO_CNN_DIR, f"{epoch}-{cnn_name}")
+                    final_path = os.path.join(conf.PATH_TO_USER_CNN_DIR, f"{epoch}-{cnn_name}")
                     logging.info(f"persisting cnn (for epoch {epoch}) to disk to {final_path}")
                     cnn.to_pth(final_path)
 

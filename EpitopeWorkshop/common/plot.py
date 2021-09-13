@@ -30,3 +30,4 @@ def plot_training_data(test_accs, test_losses, validations_accs, validation_loss
     file_name = clean_title(title)
     file_path = os.path.join(conf.PLOTS_DIR, f"{file_name}.jpg")
     fig.savefig(file_path, dpi=fig.dpi, bbox_inches='tight')
+    return file_path
