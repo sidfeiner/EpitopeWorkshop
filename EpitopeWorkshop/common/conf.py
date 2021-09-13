@@ -2,6 +2,8 @@ import os
 
 from EpitopeWorkshop.common import vars
 
+DATA_HOME_DIR = os.getenv('DATA_DIR', '../data')
+
 DEFAULT_WINDOW_SIZE = 9
 DEFAULT_WITH_SLIDING_WINDOW = True
 DEFAULT_PARTITIONS_AMT = 8
@@ -26,11 +28,18 @@ DEFAULT_PRESERVE_FILES_IN_PROCESS = True
 DEFAULT_CONCURRENT_TRAIN_FILES_AMT = 25
 NO_AMINO_ACID_CHAR = '-'
 DEFAULT_USING_NET_DEVICE = 'cpu'
-PATH_TO_CNN_DIR = os.getenv('CNN_DIR', './data')
+PATH_TO_USER_CNN_DIR = os.path.join(DATA_HOME_DIR, 'cnn-models')
+PATH_TO_CNN_DIR = os.getenv('CNN_DIR', PATH_TO_USER_CNN_DIR)
 CNN_NAME = 'cnn.pth'
 USER_CNN_NAME = 'user-cnn.pth'
 PATH_TO_CNN = os.path.join(PATH_TO_CNN_DIR, CNN_NAME)
-PATH_TO_USER_CNN = os.path.join(PATH_TO_CNN_DIR, USER_CNN_NAME)
-HEAT_MAP_DIR = os.getenv('HEAT_MAP_DIR', './data')
+PATH_TO_USER_CNN = os.path.join(DATA_HOME_DIR, USER_CNN_NAME)
+HEAT_MAP_DIR = os.path.join(DATA_HOME_DIR, 'heat-maps')
+PLOTS_DIR = os.path.join(DATA_HOME_DIR, 'plots')
 DEFAULT_MIN_EPITOPE_SIZE = 4
 DEFAULT_BALANCING_METHOD = vars.BALANCING_METHOD_UNDER
+
+os.makedirs(PATH_TO_CNN_DIR, exist_ok=True)
+os.makedirs(PATH_TO_USER_CNN_DIR, exist_ok=True)
+os.makedirs(HEAT_MAP_DIR, exist_ok=True)
+os.makedirs(PLOTS_DIR, exist_ok=True)

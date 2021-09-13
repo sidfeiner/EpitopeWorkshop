@@ -21,17 +21,16 @@ FROM debian:buster AS runtime
 # Copy /venv from the previous stage:
 COPY --from=build /venv /venv
 
-RUN mkdir -p /workshop /workshop/data/cnn-models/ /workshop/data/heat-maps/
+RUN mkdir -p /workshop /workshop/data/cnn-models/
 ADD EpitopeWorkshop /workshop/EpitopeWorkshop
 COPY entry.sh setup.py /workshop/
+ENV DATA_DIR /workshop/mnt/data
 ENV CNN_DIR /workshop/data/cnn-models/
-ENV HEAT_MAP_DIR /workshop/data/heat-maps/
+RUN mkdir -p /workshop/mnt/data
 COPY data/cnn.pth /workshop/data/cnn-models/
 
 RUN cd /workshop && /bin/bash -c "source /venv/bin/activate && python setup.py develop"
 WORKDIR /workshop/EpitopeWorkshop
 
-# When image is run, run the code with the environment
-# activated:
 SHELL ["/bin/bash"]
 ENTRYPOINT /workshop/entry.sh

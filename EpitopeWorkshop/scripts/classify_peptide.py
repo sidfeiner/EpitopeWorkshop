@@ -21,11 +21,8 @@ from EpitopeWorkshop.process.read import prep_data_per_sequence, build_df
 class PeptideClassifier:
 
     def _load_net(self, cnn_name: str = CNN_NAME):
-        cnn = CNN()
-        cnn_path = os.path.join(PATH_TO_CNN_DIR, cnn_name)
-        cnn.load_state_dict(torch.load(cnn_path, map_location=DEFAULT_USING_NET_DEVICE))
+        cnn = CNN.from_pth(cnn_name)
         cnn.eval()
-
         return cnn
 
     def _prepare_data(self, seq: str):

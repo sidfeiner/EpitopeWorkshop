@@ -1,6 +1,9 @@
+import os
+
 import torch
 import torch.nn as nn
 
+from EpitopeWorkshop.common import conf
 from EpitopeWorkshop.common.conf import DEFAULT_NORMALIZE_SURFACE_ACCESSIBILITY, DEFAULT_NORMALIZE_VOLUME, \
     DEFAULT_NORMALIZE_HYDROPHOBICITY
 from EpitopeWorkshop.common.contract import *
@@ -95,8 +98,14 @@ class CNN(nn.Module):
     def to_pth(self, path: str):
         torch.save(self.state_dict(), path)
 
+    DIR_PATHS = [conf.PATH_TO_USER_CNN_DIR, conf.PATH_TO_CNN_DIR]
+
     @classmethod
-    def from_pth(cls, path: str) -> 'CNN':
+    def from_pth(cls, cnn_name: str) -> 'CNN':
         cnn = cls()
-        cnn.load_state_dict(torch.load(path))
-        return cnn
+        for dir_path in cls.DIR_PATHS:
+            cnn_path = os.path.join(dir_path, cnn_name)
+            if os.path.exists(cnn_path):
+                cnn.load_state_dict(torch.load(cnn_path))
+                return cnn
+        raise FileNotFoundError(f"could not find cnn name {cnn_name}")

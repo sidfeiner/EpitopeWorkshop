@@ -212,7 +212,7 @@ class FullFlow:
                 self._move_files_in_dir_to_dir(src, dst)
 
         self.trainer.train(all_train_files_dir, all_validation_files_dir, all_test_files_dir, epochs,
-                           os.path.join(PATH_TO_CNN_DIR, cnn_name), batch_size,
+                           cnn_name, batch_size,
                            pos_weight, weight_decay,
                            normalize_hydrophobicity, normalize_volume, normalize_surface_accessibility, threshold,
                            preserve_files_in_process=preserve_files_in_process)
