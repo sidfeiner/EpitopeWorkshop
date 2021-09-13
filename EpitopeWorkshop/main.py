@@ -59,14 +59,19 @@ class FullFlow:
         os.makedirs(balanced_dir, exist_ok=True)
 
         if balancing_method == vars.BALANCING_METHOD_OVER:
+            logging.info("over balancing will be applied")
             balance_func = functools.partial(
                 self.over_balancer.over_balance_df,
                 oversampling_change_val_proba=oversampling_change_val_proba,
                 oversampling_altercation_pct_min=oversampling_altercation_pct_min,
                 oversampling_altercation_pct_max=oversampling_altercation_pct_max
             )
-        else:
+        elif balancing_method == vars.BALANCING_METHOD_UNDER:
+            # No balancing was already treated
+            logging.info("under balancing will be applied")
             balance_func = functools.partial(self.under_balancer.under_balance_df)
+        else:
+            raise RuntimeError(f"unknown balancing method: {balancing_method}")
 
         for file_name, df in file_and_dfs:
             # file_name is the path where `df` is stored
@@ -90,14 +95,18 @@ class FullFlow:
         for path in paths:
             print(f"* {os.path.basename(path)}")
 
-    def classify(self, sequence: str, heat_map_name: Optional[str] = None, cnn_name: str = CNN_NAME):
+    def classify(self, sequence: str, heat_map_name: Optional[str] = None, print_proba: bool = DEFAULT_PRINT_PROBA,
+                 print_precision: int = DEFAULT_PRINT_PRECISION, cnn_name: str = CNN_NAME):
         """Classify a sequence based on some CNN.
         :param sequence: amino acid sequence
         :param heat_map_name: If given, heat map will be saved to this location (container file-system). Be sure to
                               mount this directory to access it from your computer
+        :param print_proba: If true, will print the probabilities of each amino acid, just as the CNN predicted
+        :param print_precision: If `print_proba` is true, then the probabilities will be printed with this precision
+                                after the decimal point.
         :param cnn_name: Name of CNN to use for this classification. To know which cnns are available, run list-cnns command
         """
-        return self._classify.classify_peptide(sequence, heat_map_name, cnn_name)
+        return self._classify.classify_peptide(sequence, heat_map_name, print_proba, print_precision, cnn_name)
 
     def run_flow(self, sequences_files_dir: str, total_workers: int = 1,
                  split_file_to_parts_amt: Optional[int] = None,
@@ -222,7 +231,4 @@ if __name__ == '__main__':
     log_format = "%(asctime)s : %(threadName)s : %(levelname)s : %(process)d : %(module)s : %(message)s"
     log_level = os.getenv('LOG_LEVEL', 'WARN')
     logging.basicConfig(format=log_format, level=log_level)
-    start = time.time()
     fire.Fire(FullFlow)
-    delta = time.time() - start
-    print(f"run took {delta} seconds")

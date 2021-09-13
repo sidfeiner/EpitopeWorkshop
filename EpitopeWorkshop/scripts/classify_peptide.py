@@ -10,8 +10,8 @@ import torch
 import numpy as np
 import seaborn as sb
 
-from EpitopeWorkshop.common.conf import DEFAULT_USING_NET_DEVICE, PATH_TO_CNN, \
-    DEFAULT_IS_IN_EPITOPE_THRESHOLD, DEFAULT_MIN_EPITOPE_SIZE, CNN_NAME, PATH_TO_CNN_DIR, HEAT_MAP_DIR
+from EpitopeWorkshop.common.conf import DEFAULT_IS_IN_EPITOPE_THRESHOLD, DEFAULT_MIN_EPITOPE_SIZE, CNN_NAME, \
+    HEAT_MAP_DIR, DEFAULT_PRINT_PROBA, DEFAULT_PRINT_PRECISION
 from EpitopeWorkshop.cnn.cnn import CNN
 from EpitopeWorkshop.common import contract
 from EpitopeWorkshop.process.features import FeatureCalculator
@@ -61,11 +61,16 @@ class PeptideClassifier:
         figure = heat_map.get_figure()
         figure.savefig(os.path.join(HEAT_MAP_DIR, path))
 
-    def classify_peptide(self, sequence: str, heat_map_name: Optional[str] = None, cnn_name: str = CNN_NAME):
+    def classify_peptide(self, sequence: str, heat_map_name: Optional[str] = None,
+                         print_proba: bool = DEFAULT_PRINT_PROBA, print_precision: int = DEFAULT_PRINT_PRECISION,
+                         cnn_name: str = CNN_NAME):
         """
         :param sequence: amino acid sequence
         :param heat_map_name: If given, heat map will be saved to this location (container file-system). Be sure to
                               mount this directory to access it from your computer
+        :param print_proba: If true, will print the probabilities of each amino acid, just as the CNN predicted
+        :param print_precision: If `print_proba` is true, then the probabilities will be printed with this precision
+                                after the decimal point.
         :param cnn_name: Name of CNN to use for this classification
         """
         logging.info(f"preparing data to input")
@@ -75,13 +80,17 @@ class PeptideClassifier:
         cnn = self._load_net(cnn_name)
 
         logging.info(f"running.....")
-        epitope_probas = pd.DataFrame(torch.sigmoid(cnn(data))).astype("float")
+        probas = torch.sigmoid(cnn(data))
+        epitope_probas = pd.DataFrame(probas).astype("float")
 
         logging.info(f"finished calculating probabilities, creating prediction")
         prediction = self._make_prediction_str(sequence, epitope_probas)
 
         if heat_map_name is not None:
             self._create_heat_map(epitope_probas, heat_map_name)
+        if print_proba:
+            np.set_printoptions(precision=print_precision)
+            print(probas.flatten(0).detach().numpy())
         return prediction
 
 

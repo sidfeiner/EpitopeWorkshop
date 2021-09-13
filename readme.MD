@@ -1,9 +1,25 @@
 # Docker execution
 
-Our Docker image is `sfeiner/epitope-workshop`. It's entrypoint is the `main.py` so example commands are:
+Our Docker image is `sfeiner/epitope-workshop`. It's entrypoint is the `main.py` file. For some of the modules, it's
+important to set up a mount between your local file system and the Docker container (for example if you would like to
+load a cnn of yours, if you want access to the generated heat maps or plots, and if you would like to run the whole
+learning flow based on fasta files on your local file system).
 
-* `docker run sfeiner/epitope-workshop run-flow --sequences-files-dir /Users/sfeiner/Documents/studies/biology/EpitopeWorkshop/data/iedb-3/ --total-workers 15 --split-file-to-parts-amt 150`
-* `docker run sfeiner/epitope-workshop classify classify-peptide --peptide XXXXXX`
+If you do, you MUST mount it to the following path in the container: `/workshop/mnt/data`. Once the mount is created you
+will see the following sub-directories:
+
+* `cnn-models` - Your generated cnn models will be stored here
+* `heat-maps` - Generated heat maps will be stored here
+* `plots` - Plots generated during learning will be stored here
+
+
+Example when no mount is needed:
+
+`docker run sfeiner/epitope-workshop classify --sequence XXXXXX`
+
+Examples when a mount is needed:
+* `docker run --volume /path/to/local/dir:/workshop/mnt/data:rw sfeiner/epitope-workshop run-flow --sequences-files-dir /Users/sfeiner/Documents/studies/biology/EpitopeWorkshop/data/iedb-3/ --total-workers 15 --split-file-to-parts-amt 150`
+* `docker run --volume /path/to/local/dir:/workshop/mnt/data:rw sfeiner/epitope-workshop classify --sequence XXXXXX --heat-map-name result-heat`
 
 To set the `LOG_LEVEL` env variable, add the `-e` flag like such:
 
@@ -46,6 +62,7 @@ gets as input some sequence and returns the sequence where the uppered amino aci
 probability of being in the epitope.
 
 If you want to see detailed logs, you can set the env variable `LOG_LEVEL` to:
+
 * `DEBUG`
 * `INFO`
 * `WARN`
@@ -62,6 +79,10 @@ This command has 3 arguments:
 
 * `sequence` - amino acid sequence
 * `heat-map-name` - Optional. If given, png file with heat map will be stored with this name
+* `print-proba` - If true, will print the probabilities of each amino acid, to be in the epitope. This will reflect the
+  cnn's output.
+* `print-precision` - Defaults to 3 and will affect the precision of the probabilities of the amino acids ONLY when
+  printing.
 * `cnn-name` - Optional. If given, this cnn will be used to classify the sequence
 
 Example: `python main.py classify --sequence mntlllPKPKKDETIQCCTKNNcnr`
@@ -79,14 +100,15 @@ This command combines the whole process of extracting features and building a we
 * `sequences_files_dir` - Directory with all fasta files that must be included in the process.
 
 This command get MANY optional arguments that affect the flow of the process. For example:
+
 * normalize numerical features
 * you can over-balance (this also synthesizes new data), under-balance or apply no balancing
-* define window size 
+* define window size
 * batch size (for teaching the model)
-* amount of batches between test/validation evaluations
 * amount of `epochs`
 * `pos_weight` param to be passed to the loss function
 * `weight_decay` param to be passed to the optimizer
+* `threshold` that termines from which probability, the amino acid is considered to be part of the epitope
 * many more... To find out about them run `python main.py run-flow --help`
 
 ## Modules

@@ -2,7 +2,7 @@ import os
 
 from EpitopeWorkshop.common import vars
 
-DATA_HOME_DIR = os.getenv('DATA_DIR', '../data')
+DATA_HOME_DIR = os.getenv('DATA_DIR', './data')
 
 DEFAULT_WINDOW_SIZE = 9
 DEFAULT_WITH_SLIDING_WINDOW = True
@@ -37,6 +37,8 @@ PATH_TO_USER_CNN = os.path.join(DATA_HOME_DIR, USER_CNN_NAME)
 HEAT_MAP_DIR = os.path.join(DATA_HOME_DIR, 'heat-maps')
 PLOTS_DIR = os.path.join(DATA_HOME_DIR, 'plots')
 DEFAULT_MIN_EPITOPE_SIZE = 4
+DEFAULT_PRINT_PROBA = False
+DEFAULT_PRINT_PRECISION = 3
 DEFAULT_BALANCING_METHOD = vars.BALANCING_METHOD_UNDER
 
 os.makedirs(PATH_TO_CNN_DIR, exist_ok=True)
