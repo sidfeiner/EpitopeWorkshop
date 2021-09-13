@@ -112,12 +112,12 @@ class FullFlow:
                  preserve_files_in_process: bool = DEFAULT_PRESERVE_FILES_IN_PROCESS,
                  concurrent_train_files_amt: int = DEFAULT_CONCURRENT_TRAIN_FILES_AMT,
                  batch_size: int = DEFAULT_BATCH_SIZE,
-                 batches_until_test: int = DEFAULT_BATCHES_UNTIL_TEST,
                  max_records_in_final_df: int = DEFAULT_RECORDS_IN_FINAL_DF,
                  epochs: int = DEFAULT_EPOCHS,
                  pos_weight: float = DEFAULT_POS_WEIGHT,
                  weight_decay: float = DEFAULT_WEIGHT_DECAY,
-                 cnn_name: str = USER_CNN_NAME
+                 cnn_name: str = USER_CNN_NAME,
+                 threshold: float = DEFAULT_IS_IN_EPITOPE_THRESHOLD
                  ):
         """
         This is the main entry point for learning.
@@ -143,11 +143,11 @@ class FullFlow:
         :param concurrent_train_files_amt: Amount of concurrent train files to randomly shuffle the data.
                                            This amount sets the amount of concurrent validation/test files.
         :param batch_size: batch size when the CNN learns
-        :param batches_until_test: Batches to learn between testing
         :param epochs: epochs to run the data
         :param pos_weight: If given, will give a positive weight to the loss func
         :param weight_decay: regularization parameter, defaults to 0.01
         :param cnn_name: name of the cnn, use this name if you want to classify using your cnn
+        :param threshold: Threshold that decides if if an amino acid is part of the epitope
         """
         assert balancing_method in (
             vars.BALANCING_METHOD_NONE, vars.BALANCING_METHOD_OVER, vars.BALANCING_METHOD_UNDER)
@@ -213,8 +213,8 @@ class FullFlow:
 
         self.trainer.train(all_train_files_dir, all_validation_files_dir, all_test_files_dir, epochs,
                            os.path.join(PATH_TO_CNN_DIR, cnn_name), batch_size,
-                           batches_until_test, pos_weight, weight_decay,
-                           normalize_hydrophobicity, normalize_volume, normalize_surface_accessibility,
+                           pos_weight, weight_decay,
+                           normalize_hydrophobicity, normalize_volume, normalize_surface_accessibility, threshold,
                            preserve_files_in_process=preserve_files_in_process)
 
 

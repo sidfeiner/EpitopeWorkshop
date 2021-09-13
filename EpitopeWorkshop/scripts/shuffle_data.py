@@ -99,7 +99,8 @@ class ShuffleData:
                 batch_labels.append(label)
             final_df_path = os.path.join(final_dir,
                                          f"iedb_linear_epitopes_{file_idx}_shuffled.df")
-            self.data_to_df_disk(final_df_path, batch_tensors, batch_labels)
+            df = self.data_to_df_disk(final_df_path, batch_tensors, batch_labels)
+            del df
 
         def write_to_file(row: pd.Series, stats: FileStats):
             try:

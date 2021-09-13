@@ -45,7 +45,7 @@ class ModelTrainer:
                     )
                     running_loss = 0.0
 
-    def _get_loss_and_accuracy(self, dls: Callable[[], List[data.Dataset]], threshold: float):
+    def get_loss_and_accuracy(self, dls: Callable[[], List[data.Dataset]], threshold: float):
         total_acc, total_loss = 0, 0
         dls_len = 0
         for dl in dls():
@@ -60,18 +60,13 @@ class ModelTrainer:
                 total_acc += torch.sum(test_prediction == test_y.unsqueeze(1).float()).float().item()
         return dls_len, total_loss, total_acc
 
-    def train(self, batch_size: int, dl_train: data.Dataset, dls_test: Callable[[], List[data.Dataset]],
-              dls_validation: Callable[[], List[data.Dataset]],
-              batches_until_test: int = DEFAULT_BATCHES_UNTIL_TEST, epoch_amt: int = DEFAULT_EPOCHS,
+    def train(self, dl_train: data.Dataset, epoch_amt: int = DEFAULT_EPOCHS,
               threshold=DEFAULT_IS_IN_EPITOPE_THRESHOLD):
-        test_accuracies, test_losses = [], []
-        validation_accuracies, validation_losses = [], []
-        train_accuracies, train_losses = [], []
+
+        total_accuracy, total_loss = 0, 0
 
         for epoch_idx in range(epoch_amt):
             logging.info(f"running epoch {epoch_idx + 1}/{epoch_amt}")
-            total_loss, n_correct = 0, 0
-
             for total_batch_idx, batch in enumerate(dl_train):
                 if total_batch_idx % 2000 == 0:
                     logging.debug(f"running batch {total_batch_idx + 1}/{len(dl_train)}")
@@ -91,20 +86,6 @@ class ModelTrainer:
                 # Calculate accuracy
                 total_loss += loss.item()
                 y_pred = y_pred_log_proba >= threshold
-                n_correct += torch.sum(y_pred == y.unsqueeze(1).float()).float().item()
-                # if (total_batch_idx + 1) % batches_until_test == 0:
-            logging.debug(f"comparing with all the test data at end of epoch {epoch_idx + 1}")
-            dls_test_len, test_total_loss, test_total_acc = self._get_loss_and_accuracy(dls_test, threshold)
-            dls_validation_len, validation_total_loss, validation_total_acc = self._get_loss_and_accuracy(
-                dls_validation, threshold)
+                total_accuracy += torch.sum(y_pred == y.unsqueeze(1).float()).float().item()
 
-            test_accuracies.append(test_total_acc / (dls_test_len * batch_size))
-            test_losses.append(test_total_loss / dls_test_len)
-            validation_accuracies.append(validation_total_acc / (dls_validation_len * batch_size))
-            validation_losses.append(validation_total_loss / dls_validation_len)
-            train_accuracies.append(n_correct / (batches_until_test * batch_size))
-            train_losses.append(total_loss / batches_until_test)
-
-            # n_correct, total_loss = 0, 0
-
-        return train_accuracies, train_losses, validation_accuracies, validation_losses, test_accuracies, test_losses
+        return total_accuracy, total_loss

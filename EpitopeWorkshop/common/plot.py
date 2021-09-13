@@ -1,8 +1,19 @@
+import os
+
 import matplotlib.pyplot as plt
+import re
+
+from EpitopeWorkshop.common import conf
+
+CONSEC_NON_WORD_PATTERN = re.compile(r"\W+")
+
+
+def clean_title(s: str) -> str:
+    return CONSEC_NON_WORD_PATTERN.sub('_', s)
 
 
 def plot_training_data(test_accs, test_losses, validations_accs, validation_losses, train_accs, train_losses,
-                       title=None):
+                       title):
     fig = plt.figure()
     plt.plot(train_accs)
     plt.plot(train_losses)
@@ -16,4 +27,6 @@ def plot_training_data(test_accs, test_losses, validations_accs, validation_loss
     if title is not None:
         plt.title(title)
     fig.tight_layout()
-    plt.show()
+    file_name = clean_title(title)
+    file_path = os.path.join(conf.PLOTS_DIR, f"{file_name}.jpg")
+    fig.savefig(file_path, dpi=fig.dpi, bbox_inches='tight')

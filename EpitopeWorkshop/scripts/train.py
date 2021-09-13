@@ -52,11 +52,11 @@ class Train:
 
     def train(self, train_files_dir: str, validation_files_dir: str, test_files_dir: str, epochs: int = DEFAULT_EPOCHS,
               persist_cnn_path: Optional[str] = None, batch_size: int = DEFAULT_BATCH_SIZE,
-              batches_until_test: int = DEFAULT_BATCHES_UNTIL_TEST,
               pos_weight: Optional[float] = None, weight_decay: Optional[float] = DEFAULT_WEIGHT_DECAY,
               normalize_hydrophobicity: bool = DEFAULT_NORMALIZE_HYDROPHOBICITY,
               normalize_volume: bool = DEFAULT_NORMALIZE_VOLUME,
               normalize_surface_accessibility: bool = DEFAULT_NORMALIZE_SURFACE_ACCESSIBILITY,
+              threshold=DEFAULT_IS_IN_EPITOPE_THRESHOLD,
               preserve_files_in_process: bool = DEFAULT_PRESERVE_FILES_IN_PROCESS):
         """
         :param train_files_dir: Directory with all train dataframes
@@ -65,12 +65,12 @@ class Train:
         :param epochs: Amount of epochs for learning
         :param persist_cnn_path: Path to persist the cnn to when learning
         :param batch_size: Batch size for the Data Loader - Defaults to 10
-        :param batches_until_test: Batches to learn between testing
         :param pos_weight: If given, will give a positive weight to the loss func
         :param weight_decay: regularization parameter, defaults to 0.01
         :param normalize_hydrophobicity: If true, hydrophobicity values will be normalized during pre-process in CNN
         :param normalize_volume: If true, amino acid volume values will be normalized during pre-process in CNN
         :param normalize_surface_accessibility: If true, amino acid SA values will be normalized during pre-process in CNN
+        :param threshold: Threshold to determine if an amino acid is part of the epitope
         :param preserve_files_in_process: If False, will delete training file after it has been learned
         """
         cnn = CNN(normalize_hydrophobicity, normalize_volume, normalize_surface_accessibility)
@@ -82,27 +82,18 @@ class Train:
         all_epochs_train_accuracy, all_epochs_train_loss, all_epochs_validation_acccuracy, all_epochs_validation_loss, \
         all_epochs_test_accuracy, all_epochs_test_loss = [], [], [], [], [], []
         for epoch in range(epochs):
-            per_epoch_train_accuracy, per_epoch_train_loss, per_epoch_validation_accuracy, per_epoch_validation_loss, per_epoch_test_accuracy, per_epoch_test_loss = \
-                [], [], [], [], [], []
-            logging.info(f"running on all train data, epoch {epoch}")
+            logging.info(f"running on all train data, epoch {epoch + 1}/{epochs}")
             random.shuffle(train_files)
+            total_train_acc_sum, total_train_loss_sum = 0, 0
+            train_batches_amt = 0
             for index, file in enumerate(train_files):
                 logging.info(f"training file ({index + 1}/{len(train_files)}) {file}")
                 random.shuffle(test_files)
                 dl_train, _ = load_df_as_dl(file, batch_size)
-                dls_test = lambda: load_many_dfs_as_dls(test_files, batch_size)
-                dls_validation = lambda: load_many_dfs_as_dls(validation_files, batch_size)
-                train_accuracies, train_losses, validation_accuracies, validation_losses, test_accuracies, test_losses = \
-                    trainer.train(batch_size, dl_train, dls_test, dls_validation, batches_until_test, epoch_amt=1)
-                plot.plot_training_data(test_accuracies, test_losses, train_accuracies, validation_accuracies,
-                                        validation_losses, train_losses,
-                                        f"epoch {epoch} file_index {index}, weight decay {weight_decay}")
-                per_epoch_train_accuracy.extend(train_accuracies)
-                per_epoch_train_loss.extend(train_losses)
-                per_epoch_validation_accuracy.extend(validation_accuracies)
-                per_epoch_validation_loss.extend(validation_losses)
-                per_epoch_test_accuracy.extend(test_accuracies)
-                per_epoch_test_loss.extend(test_losses)
+                train_batches_amt += len(dl_train)
+                train_acc_sum, train_loss_sum = trainer.train(dl_train, epoch_amt=1)
+                total_train_acc_sum += train_acc_sum
+                total_train_loss_sum += train_loss_sum
                 if epoch == epochs - 1 and not preserve_files_in_process:
                     logging.info(f"removing file {file}")
                     os.remove(file)
@@ -111,15 +102,31 @@ class Train:
                     final_path = os.path.join(dir_name, f"{epoch}-{basename}")
                     logging.info(f"persisting cnn (for epoch {epoch}) to disk to {final_path}")
                     cnn.to_pth(final_path)
-            plot.plot_training_data(per_epoch_train_accuracy, per_epoch_test_loss, per_epoch_validation_accuracy,
-                                    per_epoch_validation_loss, per_epoch_train_accuracy, per_epoch_train_loss,
-                                    f"summarize epoch {epoch}, weight decay {weight_decay}")
-            all_epochs_train_accuracy.extend(per_epoch_train_accuracy)
-            all_epochs_train_loss.extend(per_epoch_train_loss)
-            all_epochs_validation_acccuracy.extend(per_epoch_validation_accuracy)
-            all_epochs_validation_loss.extend(per_epoch_validation_accuracy)
-            all_epochs_test_accuracy.extend(per_epoch_test_accuracy)
-            all_epochs_test_loss.extend(per_epoch_test_loss)
+
+            dls_test = lambda: load_many_dfs_as_dls(test_files, batch_size)
+            dls_validation = lambda: load_many_dfs_as_dls(validation_files, batch_size)
+
+            logging.debug(f"running cnn on test")
+            dls_test_len, test_total_loss, test_total_acc = trainer.get_loss_and_accuracy(dls_test, threshold)
+            logging.debug(f"running cnn on validation")
+            dls_validation_len, validation_total_loss, validation_total_acc = trainer.get_loss_and_accuracy(
+                dls_validation, threshold)
+
+            train_accuracy = total_train_acc_sum / (train_batches_amt * batch_size)
+            train_loss = total_train_loss_sum / train_batches_amt
+            test_accuracy = test_total_acc / (dls_test_len * batch_size)
+            test_loss = test_total_loss / dls_test_len
+            validation_accuracy = validation_total_acc / (dls_validation_len * batch_size)
+            validation_loss = validation_total_loss / dls_validation_len
+            logging.debug(
+                f"for epoch {epoch}: train acc: {train_accuracy}, train loss: {train_loss}, test acc: {test_accuracy}, test loss: {test_loss}, validation acc: {validation_accuracy}, validation loss: {validation_loss}")
+
+            all_epochs_train_accuracy.append(train_accuracy)
+            all_epochs_train_loss.append(train_loss)
+            all_epochs_test_accuracy.append(test_accuracy)
+            all_epochs_test_loss.append(test_loss)
+            all_epochs_validation_acccuracy.append(validation_accuracy)
+            all_epochs_validation_loss.append(validation_loss)
 
         plot.plot_training_data(
             all_epochs_train_accuracy, all_epochs_test_loss,
