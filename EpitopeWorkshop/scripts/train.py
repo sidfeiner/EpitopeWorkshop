@@ -11,11 +11,10 @@ import numpy as np
 import pandas as pd
 from EpitopeWorkshop.cnn.cnn import CNN
 from EpitopeWorkshop.cnn.train import ModelTrainer
-from EpitopeWorkshop.common import contract, plot
+from EpitopeWorkshop.common import contract, plot, conf
 from EpitopeWorkshop.common.conf import DEFAULT_BATCH_SIZE, DEFAULT_EPOCHS, DEFAULT_IS_IN_EPITOPE_THRESHOLD, \
-    DEFAULT_PRESERVE_FILES_IN_PROCESS, DEFAULT_WEIGHT_DECAY, PATH_TO_CNN_DIR, DEFAULT_BATCHES_UNTIL_TEST, \
-    DEFAULT_BALANCING_METHOD, DEFAULT_NORMALIZE_SURFACE_ACCESSIBILITY, DEFAULT_NORMALIZE_VOLUME, \
-    DEFAULT_NORMALIZE_HYDROPHOBICITY
+    DEFAULT_PRESERVE_FILES_IN_PROCESS, DEFAULT_WEIGHT_DECAY, PATH_TO_CNN_DIR, DEFAULT_NORMALIZE_SURFACE_ACCESSIBILITY, \
+    DEFAULT_NORMALIZE_VOLUME, DEFAULT_NORMALIZE_HYDROPHOBICITY
 from EpitopeWorkshop.dataset.EpitopeDataset import EpitopeDataset
 
 
@@ -51,7 +50,7 @@ class Train:
     """Train a CNN with all train and test files"""
 
     def train(self, train_files_dir: str, validation_files_dir: str, test_files_dir: str, epochs: int = DEFAULT_EPOCHS,
-              persist_cnn_path: Optional[str] = None, batch_size: int = DEFAULT_BATCH_SIZE,
+              cnn_name: Optional[str] = None, batch_size: int = DEFAULT_BATCH_SIZE,
               pos_weight: Optional[float] = None, weight_decay: Optional[float] = DEFAULT_WEIGHT_DECAY,
               normalize_hydrophobicity: bool = DEFAULT_NORMALIZE_HYDROPHOBICITY,
               normalize_volume: bool = DEFAULT_NORMALIZE_VOLUME,
@@ -63,7 +62,7 @@ class Train:
         :param validation_files_dir: Directory with all validation dataframes
         :param test_files_dir: Directory with all test dataframes
         :param epochs: Amount of epochs for learning
-        :param persist_cnn_path: Path to persist the cnn to when learning
+        :param cnn_name: Name of cnn to persist to disk during learning
         :param batch_size: Batch size for the Data Loader - Defaults to 10
         :param pos_weight: If given, will give a positive weight to the loss func
         :param weight_decay: regularization parameter, defaults to 0.01
@@ -97,9 +96,8 @@ class Train:
                 if epoch == epochs - 1 and not preserve_files_in_process:
                     logging.info(f"removing file {file}")
                     os.remove(file)
-                if persist_cnn_path is not None:
-                    dir_name, basename = os.path.split(persist_cnn_path)
-                    final_path = os.path.join(dir_name, f"{epoch}-{basename}")
+                if cnn_name is not None:
+                    final_path = os.path.join(conf.PATH_TO_CNN_DIR, f"{epoch}-{cnn_name}")
                     logging.info(f"persisting cnn (for epoch {epoch}) to disk to {final_path}")
                     cnn.to_pth(final_path)
 
@@ -132,44 +130,55 @@ class Train:
             all_epochs_train_accuracy, all_epochs_test_loss,
             all_epochs_validation_acccuracy, all_epochs_validation_loss,
             all_epochs_train_accuracy, all_epochs_train_loss,
-            f"summarize all {epochs} epochs, weight decay {weight_decay}"
+            f"summarize all {epochs} epochs, weight decay {weight_decay}, pos weight {pos_weight}"
         )
         logging.info("done training cnn")
 
     def test_trained_model(self, cnn_name: str, test_files_dir: str, batch_size: int = DEFAULT_BATCH_SIZE,
                            threshold: float = DEFAULT_IS_IN_EPITOPE_THRESHOLD,
                            limit_test_file_freq: Optional[float] = None):
-        total_records = 0
-        total_success = 0
+        total_records, total_success = 0, 0
         total_positive_records = 0
-        total_positive_success = 0
+        total_tp, total_tn, total_fp, total_fn = 0, 0, 0, 0
         test_files = glob.glob(os.path.join(test_files_dir, '*'))
         random.shuffle(test_files)
         if limit_test_file_freq is not None:
             last_index = math.floor(len(test_files) * limit_test_file_freq)
             test_files = test_files[:last_index]
-        cnn = CNN.from_pth(os.path.join(PATH_TO_CNN_DIR, cnn_name))
+        cnn = CNN.from_pth(cnn_name)
         for index, file in enumerate(test_files):
-            file_records = 0
-            file_positive_records = 0
+            file_records, file_positive_records, file_success = 0, 0, 0
             file_success = 0
-            file_positive_success = 0
+            file_tp = 0  # true positive
+            file_tn = 0  # true negative
+            file_fp = 0  # false positive
+            file_fn = 0  # false negative
             logging.info(f"testing file ({index + 1}/{len(test_files)}) {file}")
             dl_test, _ = load_df_as_dl(file, batch_size)
             dl_test_iter = iter(dl_test)
             for test_batch in dl_test_iter:
                 test_X, test_y = test_batch[0], test_batch[1]
                 test_pred_proba = torch.sigmoid(cnn(test_X))
-                test_prediction = (test_pred_proba >= threshold).int().squeeze()
+                test_prediction = (test_pred_proba >= threshold).float()
                 file_success += torch.sum(test_prediction == test_y).float().item()
-                file_positive_success += torch.sum(test_prediction + test_y == 2).float().item()
+                file_tp += torch.sum(test_prediction + test_y == 2).float().item()
+                file_tn += torch.sum(test_prediction + test_y == 0).float().item()
+                file_fp += torch.sum(-test_prediction + test_y == -1).float().item()
+                file_fn += torch.sum(test_prediction - test_y == -1).float().item()
                 file_positive_records += torch.sum(test_y == 1).float().item()
                 file_records += len(test_X)
             logging.info(
-                f"file records: {file_records}, positive records: {file_positive_records}, success: {file_success}. Succes rate: {file_success / file_records}. Sucess rate for positive labels: {file_positive_success / max(1, file_positive_records)}")
+                f"file records: {file_records}, positive records: {file_positive_records}, success: {file_success}. Succes rate: {file_success / file_records}. Sucess rate for positive labels: {file_tp / max(1, file_positive_records)}")
+            logging.info(
+                f"TP: {file_tp / file_records}, TN: {file_tn / file_records}, FP: {file_fp / file_records}, FN: {file_fn / file_records}")
             total_records += file_records
             total_success += file_success
             total_positive_records += file_positive_records
-            total_positive_success += file_positive_success
+            total_tp += file_tp
+            total_tn += file_tn
+            total_fp += file_fp
+            total_fn += file_fn
         logging.info(
-            f"total record: {total_records}, success: {total_success}. Success rate: {total_success / total_records}. Sucess rate for positive labels: {total_positive_success / max(1, total_positive_records)}")
+            f"total record: {total_records}, success: {total_success}. Success rate: {total_success / total_records}. Sucess rate for positive labels: {total_tp / max(1, total_positive_records)}")
+        logging.info(
+            f"TP: {total_tp / total_records}, TN: {total_tn / total_records}, FP: {total_fp / total_records}, FN: {total_fn / total_records}")

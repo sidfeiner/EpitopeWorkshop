@@ -55,9 +55,9 @@ class ModelTrainer:
                 test_X, test_y = test_batch[0], test_batch[1]
                 test_pred_log_proba = self.model(test_X)
                 test_prediction = test_pred_log_proba >= threshold
-                loss = self.loss_func(test_pred_log_proba, test_y.unsqueeze(1).float())
+                loss = self.loss_func(test_pred_log_proba, test_y.float())
                 total_loss += loss.item()
-                total_acc += torch.sum(test_prediction == test_y.unsqueeze(1).float()).float().item()
+                total_acc += torch.sum(test_prediction == test_y.float()).float().item()
         return dls_len, total_loss, total_acc
 
     def train(self, dl_train: data.Dataset, epoch_amt: int = DEFAULT_EPOCHS,
@@ -77,7 +77,7 @@ class ModelTrainer:
 
                 # Backward pass
                 self.optimizer.zero_grad()
-                loss = self.loss_func(y_pred_log_proba, y.unsqueeze(1).float())
+                loss = self.loss_func(y_pred_log_proba, y.float())
                 loss.backward()
 
                 # Weight updates
@@ -86,6 +86,6 @@ class ModelTrainer:
                 # Calculate accuracy
                 total_loss += loss.item()
                 y_pred = y_pred_log_proba >= threshold
-                total_accuracy += torch.sum(y_pred == y.unsqueeze(1).float()).float().item()
+                total_accuracy += torch.sum(y_pred == y.float()).float().item()
 
         return total_accuracy, total_loss
